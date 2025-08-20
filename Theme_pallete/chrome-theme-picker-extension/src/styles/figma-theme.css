@@ -1,0 +1,144 @@
+/* Figma Theme CSS for Content Scripts */
+
+/* Color picker overlay styles */
+#color-picker-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 999999 !important;
+  cursor: crosshair !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+/* Area snap overlay styles */
+#area-snap-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 999999 !important;
+  cursor: crosshair !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+/* Instructions overlay */
+#extension-instructions {
+  position: fixed !important;
+  top: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  padding: 10px 20px !important;
+  border-radius: 5px !important;
+  z-index: 1000001 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  pointer-events: none !important;
+}
+
+/* Color preview popup */
+#color-preview {
+  position: fixed !important;
+  background: white !important;
+  border: 1px solid #ccc !important;
+  border-radius: 5px !important;
+  padding: 10px !important;
+  z-index: 1000002 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 12px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
+  pointer-events: none !important;
+}
+
+/* Selection box for area snap */
+.area-selection-box {
+  position: fixed !important;
+  border: 2px dashed #007bff !important;
+  background: rgba(0, 123, 255, 0.1) !important;
+  z-index: 1000000 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure our overlays are always on top */
+#color-picker-overlay,
+#area-snap-overlay,
+#extension-instructions,
+#color-preview,
+.area-selection-box {
+  all: unset !important;
+  box-sizing: border-box !important;
+}
+
+/* Reset specific properties for overlays */
+#color-picker-overlay,
+#area-snap-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483647 !important;
+  cursor: crosshair !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+/* Instructions styling */
+#extension-instructions {
+  position: fixed !important;
+  top: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: white !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  z-index: 2147483646 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  pointer-events: none !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Color preview styling */
+#color-preview {
+  position: fixed !important;
+  background: white !important;
+  border: 1px solid #e1e5e9 !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  z-index: 2147483645 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  pointer-events: none !important;
+  min-width: 80px !important;
+  text-align: center !important;
+}
+
+/* Selection box styling */
+.area-selection-box {
+  position: fixed !important;
+  border: 2px dashed #007bff !important;
+  background: rgba(0, 123, 255, 0.05) !important;
+  z-index: 2147483644 !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure proper stacking context */
+body {
+  position: relative !important;
+}
+
+/* Override any conflicting styles */
+*[data-extension-overlay] {
+  all: unset !important;
+}

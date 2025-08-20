@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Figma Palette & Color Picker",
+  "version": "1.0.0",
+  "description": "Professional design tool for designers and developers: pick colors, generate palettes, inspect fonts, and create themes.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "clipboardWrite",
+    "contextMenus",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "src/icons/icon.svg",
+      "48": "src/icons/icon.svg",
+      "128": "src/icons/icon.svg"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content.js"],
+      "css": ["src/styles/figma-theme.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "src/icons/icon.svg",
+    "48": "src/icons/icon.svg",
+    "128": "src/icons/icon.svg"
+  },
+  "options_page": "src/options/options.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["src/styles/figma-theme.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "chrome_url_overrides": {
+    "popup": "popup.html"
+  }
+}

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color & Font Scraper</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎨 Color & Font Scraper</h1>
+            <p>Extract design elements from any webpage</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <button class="tab-btn active" data-tab="extract">
+                <span class="tab-icon">🔍</span>
+                Extract
+            </button>
+            <button class="tab-btn" data-tab="favorites">
+                <span class="tab-icon">⭐</span>
+                Favorites
+            </button>
+        </div>
+
+        <!-- Extract Tab -->
+        <div class="tab-content active" id="extract-tab">
+            <div class="action-section">
+                <button id="extract-btn" class="primary-btn">
+                    <span class="btn-icon">🚀</span>
+                    Start Extraction
+                </button>
+                <div class="status" id="status">Ready to extract</div>
+            </div>
+
+                                <!-- Colors Section -->
+                    <div class="section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <span class="section-icon">🎨</span>
+                                Colors Found
+                                <span class="count" id="color-count">0</span>
+                            </h3>
+                            <div class="selection-controls" id="color-selection-controls" style="display: none;">
+                                <button id="select-all-colors" class="mini-btn">Select All</button>
+                                <button id="deselect-all-colors" class="mini-btn">Deselect All</button>
+                            </div>
+                        </div>
+                        <div class="colors-grid" id="colors-container">
+                            <div class="empty-state">No colors extracted yet</div>
+                        </div>
+                        <button id="save-colors-btn" class="secondary-btn" style="display: none;">
+                            <span class="btn-icon">💾</span>
+                            Save as Theme
+                        </button>
+                    </div>
+
+                                       <!-- Fonts Section -->
+                    <div class="section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <span class="section-icon">🔤</span>
+                                Fonts Found
+                                <span class="count" id="font-count">0</span>
+                            </h3>
+                            <div class="selection-controls" id="font-selection-controls" style="display: none;">
+                                <button id="select-all-fonts" class="mini-btn">Select All</button>
+                                <button id="deselect-all-fonts" class="mini-btn">Deselect All</button>
+                            </div>
+                        </div>
+                        <div class="fonts-list" id="fonts-container">
+                            <div class="empty-state">No fonts extracted yet</div>
+                        </div>
+                    </div>
+        </div>
+
+                       <!-- Favorites Tab -->
+               <div class="tab-content" id="favorites-tab">
+                   <div class="favorites-header">
+                       <h3>Your Saved Favorites</h3>
+                       <div class="favorites-actions">
+                           <button id="apply-theme-btn" class="primary-btn" style="display: none;">
+                               <span class="btn-icon">🎨</span>
+                               Apply Theme
+                           </button>
+                           <button id="clear-all-btn" class="danger-btn">
+                               <span class="btn-icon">🗑️</span>
+                               Clear All
+                           </button>
+                       </div>
+                   </div>
+
+                               <!-- Saved Themes -->
+                   <div class="section">
+                       <h4 class="subsection-title">
+                           <span class="section-icon">🎨</span>
+                           Saved Themes
+                       </h4>
+                       <div class="colors-grid" id="saved-colors-container">
+                           <div class="empty-state">No saved themes yet</div>
+                       </div>
+                   </div>
+
+                                       <!-- Theme Details -->
+                    <div class="section">
+                        <h4 class="subsection-title">
+                            <span class="section-icon">🔤</span>
+                            Theme Details
+                        </h4>
+                        <div class="fonts-list" id="saved-fonts-container">
+                            <div class="empty-state">Click on a theme to view details</div>
+                        </div>
+                    </div>
+
+                    <!-- Theme Application Selection -->
+                    <div class="section" id="theme-application-section" style="display: none;">
+                        <h4 class="subsection-title">
+                            <span class="section-icon">🎨</span>
+                            Apply Theme Elements
+                        </h4>
+                        
+                        <!-- Color Selection for Application -->
+                        <div class="theme-apply-colors" id="theme-apply-colors">
+                            <div class="section-header">
+                                <h5>Select Colors to Apply:</h5>
+                                <div class="selection-controls">
+                                    <button id="select-all-theme-colors" class="mini-btn">Select All</button>
+                                    <button id="deselect-all-theme-colors" class="mini-btn">Deselect All</button>
+                                </div>
+                            </div>
+                            <div class="colors-grid" id="theme-apply-colors-grid"></div>
+                        </div>
+                        
+                        <!-- Font Selection for Application -->
+                        <div class="theme-apply-fonts" id="theme-apply-fonts">
+                            <div class="section-header">
+                                <h5>Select Fonts to Apply:</h5>
+                                <div class="selection-controls">
+                                    <button id="select-all-theme-fonts" class="mini-btn">Select All</button>
+                                    <button id="deselect-all-theme-fonts" class="mini-btn">Deselect All</button>
+                                    </div>
+                            </div>
+                            <div class="fonts-list" id="theme-apply-fonts-list"></div>
+                        </div>
+                        
+                        <!-- Application Options -->
+                        <div class="theme-apply-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="apply-to-background" checked>
+                                Apply to page background
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="apply-to-text" checked>
+                                Apply to text elements
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="apply-to-buttons" checked>
+                                Apply to buttons
+                            </label>
+                        </div>
+                        
+                        <button id="apply-selected-theme-btn" class="primary-btn">
+                            <span class="btn-icon">🎨</span>
+                            Apply Selected Elements
+                        </button>
+                    </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

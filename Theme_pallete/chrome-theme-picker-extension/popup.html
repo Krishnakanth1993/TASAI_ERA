@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Figma Palette & Color Picker</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div id="root">
+        <!-- Loading state -->
+        <div class="loading">Loading Figma Palette...</div>
+    </div>
+    
+    <!-- Simple popup implementation for immediate use -->
+    <script>
+        // Simple popup implementation
+        document.addEventListener('DOMContentLoaded', function() {
+            const root = document.getElementById('root');
+            
+            // Create a simple but functional popup
+            root.innerHTML = `
+                <div class="popup-root">
+                    <div class="popup-header">
+                        <div class="header-title">
+                            <svg class="header-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            <h1>Figma Palette</h1>
+                        </div>
+                        <div class="header-actions">
+                            <button class="action-btn primary" id="pickColorBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                </svg>
+                                Pick Color
+                            </button>
+                            <button class="action-btn secondary" id="snapAreaBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                                </svg>
+                                Snap Area
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="popup-content">
+                        <div class="content-section">
+                            <h3>🎨 Color Picker</h3>
+                            <div class="color-picker-section">
+                                <div class="color-preview">
+                                    <div class="color-swatch" id="colorSwatch" style="background-color: #007bff"></div>
+                                    <div class="color-input">
+                                        <input type="color" id="colorInput" value="#007bff">
+                                        <input type="text" id="colorText" value="#007bff" placeholder="#000000">
+                                    </div>
+                                </div>
+                                <div class="color-formats" id="colorFormats">
+                                    <!-- Color formats will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="content-section">
+                            <h3>⚡ Quick Actions</h3>
+                            <div class="quick-actions">
+                                <button class="action-btn secondary full-width" id="inspectFontsBtn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 4v3h5v12h3V7h5V4H9zm-6 4v3h5v12h3V8h5V5H3z"/>
+                                    </svg>
+                                    Inspect Page Fonts
+                                </button>
+                                <button class="action-btn secondary full-width" id="generatePaletteBtn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                    </svg>
+                                    Generate Palette
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="content-section">
+                            <h3>📚 Instructions</h3>
+                            <div class="instructions">
+                                <p><strong>Pick Color:</strong> Click the "Pick Color" button, then click anywhere on a webpage to select a color.</p>
+                                <p><strong>Snap Area:</strong> Click "Snap Area" to select a rectangular area and extract colors from it.</p>
+                                <p><strong>Inspect Fonts:</strong> Analyze all fonts used on the current webpage.</p>
+                                <p><strong>Generate Palette:</strong> Create complementary color schemes from your selected color.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listeners
+            setupEventListeners();
+            updateColorFormats('#007bff');
+            
+            // Mark as loaded to prevent white screen
+            setTimeout(() => {
+                const popupRoot = document.querySelector('.popup-root');
+                if (popupRoot) {
+                    popupRoot.classList.add('loaded');
+                }
+            }, 100);
+        });
+        
+        function setupEventListeners() {
+            const colorInput = document.getElementById('colorInput');
+            const colorText = document.getElementById('colorText');
+            const colorSwatch = document.getElementById('colorSwatch');
+            const pickColorBtn = document.getElementById('pickColorBtn');
+            const snapAreaBtn = document.getElementById('snapAreaBtn');
+            const inspectFontsBtn = document.getElementById('inspectFontsBtn');
+            const generatePaletteBtn = document.getElementById('generatePaletteBtn');
+            
+            if (colorInput) {
+                colorInput.addEventListener('input', function(e) {
+                    const color = e.target.value;
+                    colorText.value = color;
+                    colorSwatch.style.backgroundColor = color;
+                    updateColorFormats(color);
+                });
+            }
+            
+            if (colorText) {
+                colorText.addEventListener('input', function(e) {
+                    const color = e.target.value;
+                    if (isValidColor(color)) {
+                        colorInput.value = color;
+                        colorSwatch.style.backgroundColor = color;
+                        updateColorFormats(color);
+                    }
+                });
+            }
+            
+            if (pickColorBtn) {
+                pickColorBtn.addEventListener('click', function() {
+                    // Send message to background script to start color picker
+                    chrome.runtime.sendMessage({ action: 'startColorPicker' });
+                    window.close();
+                });
+            }
+            
+            if (snapAreaBtn) {
+                snapAreaBtn.addEventListener('click', function() {
+                    // Send message to background script to start area snap
+                    chrome.runtime.sendMessage({ action: 'startAreaSnap' });
+                    window.close();
+                });
+            }
+            
+            if (inspectFontsBtn) {
+                inspectFontsBtn.addEventListener('click', function() {
+                    // Send message to background script to inspect fonts
+                    chrome.runtime.sendMessage({ action: 'inspectFonts' });
+                    window.close();
+                });
+            }
+            
+            if (generatePaletteBtn) {
+                generatePaletteBtn.addEventListener('click', function() {
+                    const currentColor = colorInput ? colorInput.value : '#007bff';
+                    generatePalette(currentColor);
+                });
+            }
+        }
+        
+        function updateColorFormats(color) {
+            const formatsContainer = document.getElementById('colorFormats');
+            if (!formatsContainer) return;
+            
+            const rgb = hexToRgb(color);
+            
+            if (rgb) {
+                const formats = {
+                    'HEX': color.toUpperCase(),
+                    'RGB': `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+                    'RGBA': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`,
+                    'HSL': rgbToHsl(rgb.r, rgb.g, rgb.b),
+                    'HSLA': rgbToHsl(rgb.r, rgb.g, rgb.b, 1)
+                };
+                
+                formatsContainer.innerHTML = Object.entries(formats).map(([format, value]) => `
+                    <div class="format-item">
+                        <span class="format-label">${format}</span>
+                        <span class="format-value" onclick="copyToClipboard('${value}')" title="Click to copy">${value}</span>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+        
+        function rgbToHsl(r, g, b, a = 1) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            
+            h = Math.round(h * 360);
+            s = Math.round(s * 100);
+            l = Math.round(l * 100);
+            
+            return a === 1 ? `hsl(${h}, ${s}%, ${l}%)` : `hsla(${h}, ${s}%, ${l}%, ${a})`;
+        }
+        
+        function isValidColor(color) {
+            return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success message
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #28a745;
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    z-index: 1000;
+                    font-size: 14px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                `;
+                notification.textContent = 'Copied to clipboard!';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+        
+        function generatePalette(baseColor) {
+            const rgb = hexToRgb(baseColor);
+            if (!rgb) return;
+            
+            const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+            const h = parseInt(hsl.match(/hsl\((\d+)/)[1]);
+            const s = parseInt(hsl.match(/,(\d+)%/)[1]);
+            const l = parseInt(hsl.match(/(\d+)%\)/)[1]);
+            
+            // Generate complementary colors
+            const complementary = `hsl(${(h + 180) % 360}, ${s}%, ${l}%)`;
+            const analogous1 = `hsl(${(h + 30) % 360}, ${s}%, ${l}%)`;
+            const analogous2 = `hsl(${(h - 30 + 360) % 360}, ${s}%, ${l}%)`;
+            
+            // Show palette
+            const palette = document.createElement('div');
+            palette.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                padding: 20px;
+                z-index: 1000;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            `;
+            
+            palette.innerHTML = `
+                <h3 style="margin: 0 0 16px 0">Generated Palette</h3>
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <div style="width: 40px; height: 40px; background: ${baseColor}; border-radius: 4px; border: 1px solid #ccc;"></div>
+                    <div style="width: 40px; height: 40px; background: ${complementary}; border-radius: 4px; border: 1px solid #ccc;"></div>
+                    <div style="width: 40px; height: 40px; background: ${analogous1}; border-radius: 4px; border: 1px solid #ccc;"></div>
+                    <div style="width: 40px; height: 40px; background: ${analogous2}; border-radius: 4px; border: 1px solid #ccc;"></div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+            `;
+            
+            document.body.appendChild(palette);
+        }
+    </script>
+</body>
+</html>
