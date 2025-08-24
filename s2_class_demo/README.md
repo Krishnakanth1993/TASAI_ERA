@@ -595,11 +595,12 @@ git push -u origin main
 
 ```powershell
 cd "I:\TSAI\2025\ERA V4\Course Content\Session 2\ins_code\s2_class_demo"
-icacls .\s2_class_demo.pem /inheritance:r
-icacls .\s2_class_demo.pem /grant:r "$($env:USERNAME):(R)"
-icacls .\s2_class_demo.pem /remove "Authenticated Users" "BUILTIN\Users" "Everyone"
+#icacls Windows command to change file/folder permissions (ACLs).
+icacls .\s2_class_demo.pem /inheritance:r #This command removes inherited permissions from your SSH key file, making it more secure and suitable for SSH authentication.
+icacls .\s2_class_demo.pem /grant:r "$($env:USERNAME):(R)" #This command ensures that only your user has explicit read access to the SSH key file, which is required for secure SSH connections (similar to chmod 400 on Linux).
+icacls .\s2_class_demo.pem /remove "Authenticated Users" "BUILTIN\Users" "Everyone" # It makes your SSH key file readable only by you, removing access for all other users/groups.
 
-ssh -i .\s2_class_demo.pem ubuntu@X.X.X.X
+ssh -i .\s2_class_demo.pem ubuntu@X.X.X.X # logging into EC2 instance
 ```
 
 ---
@@ -721,3 +722,14 @@ http://X.X.X.X:5000
 ```bash
 exit
 ```
+
+## Restarting flask app if already running in debug mode
+Warning :
+Address already in use  
+Port 5000 is in use by another program. Either identify and stop that program, or start the server with a different port.
+
+1. **Find the process using port 5000:**
+```sudo lsof -i :5000```
+2. **Note the PID (process ID) in the output.**
+3. **Kill the process:**
+	```sudo kill -9 <PID>```
