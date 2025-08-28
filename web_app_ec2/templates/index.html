@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDA Explorer - Data Analysis Made Simple</title>
+    <link rel="stylesheet" href="../static/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <h1>EDA Explorer</h1>
+                </div>
+                <nav class="nav">
+                    <a href="#upload" class="nav-link active">Upload</a>
+                    <a href="#analyze" class="nav-link">Analyze</a>
+                    <a href="#visualize" class="nav-link">Visualize</a>
+                    <a href="#export" class="nav-link">Export</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- File Upload Section -->
+            <section id="upload" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-upload"></i> Data Ingestion</h2>
+                    <p>Upload your CSV or Excel files to begin analysis</p>
+                </div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Drop your file here</h3>
+                        <p>or click to browse</p>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
+                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                            Choose File
+                        </button>
+                    </div>
+                </div>
+
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-details">
+                        <i class="fas fa-file-alt"></i>
+                        <div class="file-text">
+                            <h4 id="fileName"></h4>
+                            <p id="fileSize"></p>
+                        </div>
+                        <button class="btn btn-success" id="analyzeBtn">
+                            <i class="fas fa-play"></i> Start Analysis
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Preview Section -->
+            <section id="dataPreview" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-table"></i> Data Preview</h2>
+                    <div class="preview-controls">
+                        <button class="btn btn-outline" id="headBtn">Head (10)</button>
+                        <button class="btn btn-outline" id="tailBtn">Tail (10)</button>
+                        <button class="btn btn-outline" id="infoBtn">Data Info</button>
+                    </div>
+                </div>
+                
+                <div class="data-summary" id="dataSummary">
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <h4>Rows</h4>
+                            <span id="rowCount">-</span>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Columns</h4>
+                            <span id="colCount">-</span>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Memory</h4>
+                            <span id="memoryUsage">-</span>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Missing Values</h4>
+                            <span id="missingCount">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-wrapper" id="tableWrapper">
+                        <!-- Table will be dynamically generated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analysis Section -->
+            <section id="analyze" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Statistical Analysis</h2>
+                    <p>Generate comprehensive statistics and insights</p>
+                </div>
+
+                <div class="analysis-controls">
+                    <div class="control-group">
+                        <label>Select Columns:</label>
+                        <div class="column-selector" id="columnSelector">
+                            <!-- Columns will be dynamically populated -->
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Analysis Type:</label>
+                        <div class="analysis-options">
+                            <button class="btn btn-outline active" data-analysis="descriptive">
+                                <i class="fas fa-calculator"></i> Descriptive Stats
+                            </button>
+                            <button class="btn btn-outline" data-analysis="correlation">
+                                <i class="fas fa-link"></i> Correlation
+                            </button>
+                            <button class="btn btn-outline" data-analysis="outliers">
+                                <i class="fas fa-exclamation-triangle"></i> Outlier Detection
+                            </button>
+                            <button class="btn btn-outline" data-analysis="normality">
+                                <i class="fas fa-bell-curve"></i> Normality Tests
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-large" id="runAnalysisBtn">
+                        <i class="fas fa-rocket"></i> Run Analysis
+                    </button>
+                </div>
+
+                <div class="analysis-results" id="analysisResults">
+                    <!-- Results will be displayed here -->
+                </div>
+            </section>
+
+            <!-- Visualization Section -->
+            <section id="visualize" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-pie"></i> Data Visualization</h2>
+                    <p>Create interactive charts and plots</p>
+                </div>
+
+                <div class="viz-controls">
+                    <div class="control-group">
+                        <label>Chart Type:</label>
+                        <select id="chartType" class="form-select">
+                            <option value="histogram">Histogram</option>
+                            <option value="boxplot">Box Plot</option>
+                            <option value="scatter">Scatter Plot</option>
+                            <option value="bar">Bar Chart</option>
+                            <option value="correlation">Correlation Heatmap</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>X-Axis:</label>
+                        <select id="xAxis" class="form-select">
+                            <!-- Columns will be populated -->
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Y-Axis:</label>
+                        <select id="yAxis" class="form-select">
+                            <!-- Columns will be populated -->
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" id="generateChartBtn">
+                        <i class="fas fa-magic"></i> Generate Chart
+                    </button>
+                </div>
+
+                <div class="chart-container" id="chartContainer">
+                    <!-- Charts will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Export Section -->
+            <section id="export" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-download"></i> Export & Report</h2>
+                    <p>Download your analysis and visualizations</p>
+                </div>
+
+                <div class="export-options">
+                    <div class="export-card">
+                        <i class="fas fa-file-pdf"></i>
+                        <h4>PDF Report</h4>
+                        <p>Complete EDA report with all findings</p>
+                        <button class="btn btn-primary" id="exportPdfBtn">
+                            <i class="fas fa-download"></i> Export PDF
+                        </button>
+                    </div>
+
+                    <div class="export-card">
+                        <i class="fas fa-file-csv"></i>
+                        <h4>Data Export</h4>
+                        <p>Export cleaned data as CSV</p>
+                        <button class="btn btn-primary" id="exportCsvBtn">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+
+                    <div class="export-card">
+                        <i class="fas fa-image"></i>
+                        <h4>Chart Export</h4>
+                        <p>Download charts as PNG/SVG</p>
+                        <button class="btn btn-primary" id="exportChartBtn">
+                            <i class="fas fa-download"></i> Export Chart
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Processing your data...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="../static/app.js"></script>
+</body>
+</html>
