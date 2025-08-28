@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 import json
@@ -15,7 +16,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Mount static files
+# Add CORS middleware to prevent caching issues
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files with cache busting
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Templates

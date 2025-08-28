@@ -84,5 +84,12 @@ A modern, interactive web application for performing Exploratory Data Analysis (
 
 ```
 web_app_ec2/
-├── mai
+├── main.py # FastAPI application entry point
+├── pyproject.toml # Project configuration and dependencies
+├── README.md # Project documentation
+├── static/ # Static assets
+│ ├── styles.css # Main stylesheet
+│ └── app.js # Frontend JavaScript logic
+└── templates/ # HTML templates
+└── index.html # Main application template
 ```

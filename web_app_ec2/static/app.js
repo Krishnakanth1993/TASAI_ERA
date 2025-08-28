@@ -10,80 +10,117 @@ class EDAExplorer {
         this.setupEventListeners();
         this.setupDragAndDrop();
         this.setupNavigation();
+        console.log('EDAExplorer initialized'); // Debug log
     }
 
     setupEventListeners() {
         // File input change
-        document.getElementById('fileInput').addEventListener('change', (e) => {
-            this.handleFileSelect(e.target.files[0]);
-        });
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                console.log('File selected:', e.target.files[0]); // Debug log
+                if (e.target.files.length > 0) {
+                    this.handleFileSelect(e.target.files[0]);
+                }
+            });
+        }
 
         // Analyze button
-        document.getElementById('analyzeBtn').addEventListener('click', () => {
-            this.startAnalysis();
-        });
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', () => {
+                console.log('Analyze button clicked'); // Debug log
+                this.startAnalysis();
+            });
+        }
 
         // Preview controls
-        document.getElementById('headBtn').addEventListener('click', () => {
-            this.showDataPreview('head');
-        });
+        const headBtn = document.getElementById('headBtn');
+        if (headBtn) {
+            headBtn.addEventListener('click', () => {
+                console.log('Head button clicked'); // Debug log
+                this.showDataPreview('head');
+            });
+        }
 
-        document.getElementById('tailBtn').addEventListener('click', () => {
-            this.showDataPreview('tail');
-        });
+        const tailBtn = document.getElementById('tailBtn');
+        if (tailBtn) {
+            tailBtn.addEventListener('click', () => {
+                console.log('Tail button clicked'); // Debug log
+                this.showDataPreview('tail');
+            });
+        }
 
-        document.getElementById('infoBtn').addEventListener('click', () => {
-            this.showDataInfo();
-        });
+        const infoBtn = document.getElementById('infoBtn');
+        if (infoBtn) {
+            infoBtn.addEventListener('click', () => {
+                console.log('Info button clicked'); // Debug log
+                this.showDataInfo();
+            });
+        }
 
         // Analysis controls
-        document.getElementById('runAnalysisBtn').addEventListener('click', () => {
-            this.runAnalysis();
-        });
+        const runAnalysisBtn = document.getElementById('runAnalysisBtn');
+        if (runAnalysisBtn) {
+            runAnalysisBtn.addEventListener('click', () => {
+                console.log('Run analysis button clicked'); // Debug log
+                this.runAnalysis();
+            });
+        }
 
         // Chart generation
-        document.getElementById('generateChartBtn').addEventListener('click', () => {
-            this.generateChart();
-        });
+        const generateChartBtn = document.getElementById('generateChartBtn');
+        if (generateChartBtn) {
+            generateChartBtn.addEventListener('click', () => {
+                console.log('Generate chart button clicked'); // Debug log
+                this.generateChart();
+            });
+        }
 
         // Export buttons
-        document.getElementById('exportPdfBtn').addEventListener('click', () => {
-            this.exportPDF();
-        });
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', () => {
+                this.exportPDF();
+            });
+        }
 
-        document.getElementById('exportCsvBtn').addEventListener('click', () => {
-            this.exportCSV();
-        });
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', () => {
+                this.exportCSV();
+            });
+        }
 
-        document.getElementById('exportChartBtn').addEventListener('click', () => {
-            this.exportChart();
-        });
+        const exportChartBtn = document.getElementById('exportChartBtn');
+        if (exportChartBtn) {
+            exportChartBtn.addEventListener('click', () => {
+                this.exportChart();
+            });
+        }
     }
 
     setupDragAndDrop() {
         const uploadArea = document.getElementById('uploadArea');
-        
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                this.handleFileSelect(files[0]);
-            }
-        });
-
-        uploadArea.addEventListener('click', () => {
-            document.getElementById('fileInput').click();
-        });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.handleFileSelect(files[0]);
+                }
+            });
+        }
     }
 
     setupNavigation() {
@@ -94,6 +131,7 @@ class EDAExplorer {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetId = link.getAttribute('href').substring(1);
+                console.log('Navigation clicked:', targetId); // Debug log
                 
                 // Update active nav link
                 navLinks.forEach(l => l.classList.remove('active'));
@@ -114,6 +152,8 @@ class EDAExplorer {
     async handleFileSelect(file) {
         if (!file) return;
 
+        console.log('Processing file:', file.name, file.size); // Debug log
+
         // Validate file type
         const allowedTypes = ['.csv', '.xlsx', '.xls'];
         const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
@@ -132,8 +172,13 @@ class EDAExplorer {
         this.showLoading(true);
         
         try {
-            // Simulate file processing (replace with actual API call)
-            await this.simulateFileProcessing(file);
+            if (fileExtension === '.csv') {
+                // Handle CSV file
+                await this.processCSVFile(file);
+            } else {
+                // Handle Excel file
+                await this.simulateFileProcessing(file);
+            }
             
             this.fileInfo = {
                 name: file.name,
@@ -145,10 +190,52 @@ class EDAExplorer {
             this.showDataPreview('head');
             
         } catch (error) {
+            console.error('Error processing file:', error); // Debug log
             this.showError('Error processing file: ' + error.message);
         } finally {
             this.showLoading(false);
         }
+    }
+
+    async processCSVFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    const csvText = e.target.result;
+                    const lines = csvText.split('\n');
+                    const headers = lines[0].split(',').map(h => h.trim());
+                    
+                    const rows = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        if (lines[i].trim()) {
+                            const values = lines[i].split(',').map(v => v.trim());
+                            rows.push(values);
+                        }
+                    }
+
+                    this.data = {
+                        columns: headers,
+                        rows: rows,
+                        info: {
+                            rows: rows.length,
+                            columns: headers.length,
+                            memory: this.formatFileSize(file.size),
+                            missing: 0
+                        }
+                    };
+
+                    console.log('CSV data loaded:', this.data); // Debug log
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
     }
 
     async simulateFileProcessing(file) {
@@ -177,29 +264,61 @@ class EDAExplorer {
                         missing: 0
                     }
                 };
+                console.log('Mock data loaded:', this.data); // Debug log
                 resolve();
             }, 2000);
         });
     }
 
     displayFileInfo() {
+        console.log('Displaying file info'); // Debug log
+        
         const fileInfo = document.getElementById('fileInfo');
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
 
-        fileName.textContent = this.fileInfo.name;
-        fileSize.textContent = this.fileInfo.size;
-        fileInfo.style.display = 'block';
+        if (fileInfo && fileName && fileSize) {
+            fileName.textContent = this.fileInfo.name;
+            fileSize.textContent = this.fileInfo.size;
+            fileInfo.style.display = 'block';
+        }
 
-        // Show data preview section
-        document.getElementById('dataPreview').style.display = 'block';
-        document.getElementById('analyze').style.display = 'block';
-        document.getElementById('visualize').style.display = 'block';
-        document.getElementById('export').style.display = 'block';
+        // Show all sections
+        this.showSection('dataPreview');
+        this.showSection('analyze');
+        this.showSection('visualize');
+        this.showSection('export');
+    }
+
+    showSection(sectionId) {
+        console.log('Showing section:', sectionId); // Debug log
+        
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            console.log('Section shown:', sectionId); // Debug log
+        } else {
+            console.error('Section not found:', sectionId); // Debug log
+        }
+    }
+
+    updateNavigation(activeSectionId) {
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${activeSectionId}`) {
+                link.classList.add('active');
+            }
+        });
     }
 
     showDataPreview(type = 'head') {
-        if (!this.data) return;
+        if (!this.data) {
+            console.error('No data available for preview'); // Debug log
+            return;
+        }
+
+        console.log('Showing data preview:', type, this.data); // Debug log
 
         const rows = type === 'head' ? this.data.rows.slice(0, 10) : this.data.rows.slice(-10);
         this.renderTable(rows);
@@ -209,6 +328,11 @@ class EDAExplorer {
 
     renderTable(rows) {
         const tableWrapper = document.getElementById('tableWrapper');
+        
+        if (!tableWrapper) {
+            console.error('Table wrapper not found!');
+            return;
+        }
         
         let tableHTML = '<table><thead><tr>';
         
@@ -229,13 +353,20 @@ class EDAExplorer {
         
         tableHTML += '</tbody></table>';
         tableWrapper.innerHTML = tableHTML;
+        
+        console.log('Table rendered with', rows.length, 'rows'); // Debug log
     }
 
     updateSummary() {
-        document.getElementById('rowCount').textContent = this.data.info.rows;
-        document.getElementById('colCount').textContent = this.data.info.columns;
-        document.getElementById('memoryUsage').textContent = this.data.info.memory;
-        document.getElementById('missingCount').textContent = this.data.info.missing;
+        const rowCount = document.getElementById('rowCount');
+        const colCount = document.getElementById('colCount');
+        const memoryUsage = document.getElementById('memoryUsage');
+        const missingCount = document.getElementById('missingCount');
+
+        if (rowCount) rowCount.textContent = this.data.info.rows;
+        if (colCount) colCount.textContent = this.data.info.columns;
+        if (memoryUsage) memoryUsage.textContent = this.data.info.memory;
+        if (missingCount) missingCount.textContent = this.data.info.missing;
     }
 
     populateColumnSelectors() {
@@ -244,27 +375,50 @@ class EDAExplorer {
         const yAxisSelect = document.getElementById('yAxis');
 
         // Clear existing options
-        columnSelector.innerHTML = '';
-        xAxisSelect.innerHTML = '<option value="">Select column</option>';
-        yAxisSelect.innerHTML = '<option value="">Select column</option>';
+        if (columnSelector) columnSelector.innerHTML = '';
+        if (xAxisSelect) xAxisSelect.innerHTML = '<option value="">Select column</option>';
+        if (yAxisSelect) yAxisSelect.innerHTML = '<option value="">Select column</option>';
 
         this.data.columns.forEach((column, index) => {
             // Column selector for analysis
-            const checkbox = document.createElement('div');
-            checkbox.className = 'column-checkbox';
-            checkbox.innerHTML = `
-                <input type="checkbox" id="col_${index}" value="${column}">
-                <label for="col_${index}">${column}</label>
-            `;
-            columnSelector.appendChild(checkbox);
+            if (columnSelector) {
+                const checkbox = document.createElement('div');
+                checkbox.className = 'column-checkbox';
+                checkbox.innerHTML = `
+                    <input type="checkbox" id="col_${index}" value="${column}">
+                    <label for="col_${index}">${column}</label>
+                `;
+                columnSelector.appendChild(checkbox);
+            }
 
             // Chart axis selectors
-            const option = document.createElement('option');
-            option.value = column;
-            option.textContent = column;
-            xAxisSelect.appendChild(option.cloneNode(true));
-            yAxisSelect.appendChild(option);
+            if (xAxisSelect) {
+                const option = document.createElement('option');
+                option.value = column;
+                option.textContent = column;
+                xAxisSelect.appendChild(option.cloneNode(true));
+            }
+            
+            if (yAxisSelect) {
+                const option = document.createElement('option');
+                option.value = column;
+                option.textContent = column;
+                yAxisSelect.appendChild(option);
+            }
         });
+    }
+
+    startAnalysis() {
+        console.log('Starting analysis'); // Debug log
+        
+        // Show data preview first
+        this.showDataPreview('head');
+        
+        // Then automatically show the analyze section
+        this.showSection('analyze');
+        
+        // Update navigation
+        this.updateNavigation('analyze');
     }
 
     showDataInfo() {
@@ -512,14 +666,18 @@ class EDAExplorer {
 
     showLoading(show) {
         const overlay = document.getElementById('loadingOverlay');
-        if (show) {
-            overlay.classList.add('show');
-        } else {
-            overlay.classList.remove('show');
+        if (overlay) {
+            if (show) {
+                overlay.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+            }
         }
     }
 
     showError(message) {
+        console.error('Error:', message); // Debug log
+        
         // Create a simple error notification
         const errorDiv = document.createElement('div');
         errorDiv.style.cssText = `
@@ -572,7 +730,7 @@ class EDAExplorer {
 
     exportChart() {
         const chartContainer = document.getElementById('chartContainer');
-        if (chartContainer.children.length === 0) {
+        if (chartContainer && chartContainer.children.length === 0) {
             this.showError('No chart to export');
             return;
         }
@@ -587,5 +745,6 @@ class EDAExplorer {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing EDAExplorer'); // Debug log
     new EDAExplorer();
 });
