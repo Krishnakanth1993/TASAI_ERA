@@ -9,6 +9,7 @@ import json
 from typing import Optional
 import uvicorn
 from pathlib import Path
+import numpy as np
 
 app = FastAPI(
     title="EDA Explorer", 
@@ -30,6 +31,21 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Templates
 templates = Jinja2Templates(directory="templates")
+
+def convert_numpy_types(obj):
+    """Convert numpy types to Python native types for JSON serialization"""
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_numpy_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    else:
+        return obj
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -59,21 +75,26 @@ async def upload_file(file: UploadFile = File(...)):
         else:  # Excel files
             df = pd.read_excel(io.BytesIO(content))
         
-        # Basic data info
-        data_info = {
-            "rows": len(df),
-            "columns": len(df.columns),
-            "memory_usage": f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB",
-            "missing_values": df.isnull().sum().sum(),
-            "columns_list": df.columns.tolist(),
-            "data_types": df.dtypes.astype(str).to_dict(),
-            "head_data": df.head(10).values.tolist(),
-            "tail_data": df.tail(10).values.tolist()
+        # Clean the DataFrame - replace NaN values with None
+        df = df.replace({np.nan: None})
+        
+        # Convert DataFrame to list of dictionaries for JSON response
+        data = df.to_dict('records')
+        
+        # Convert numpy types to Python native types
+        data = convert_numpy_types(data)
+        
+        # Return the data
+        return {
+            "success": True,
+            "message": f"File {file.filename} uploaded successfully",
+            "data": data,
+            "rows": len(data),
+            "columns": len(data[0]) if data else 0
         }
         
-        return JSONResponse(content=data_info)
-        
     except Exception as e:
+        print(f"Upload error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.post("/analyze")
@@ -133,7 +154,7 @@ async def generate_chart(request: Request):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "EDA Explorer"}
+    return {"status": "healthy", "message": "EDA Explorer is running"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

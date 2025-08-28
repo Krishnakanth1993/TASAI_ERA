@@ -67,38 +67,17 @@
             <section id="dataPreview" class="section" style="display: none;">
                 <div class="section-header">
                     <h2><i class="fas fa-table"></i> Data Preview</h2>
-                    <div class="preview-controls">
-                        <button class="btn btn-outline" id="headBtn">Head (10)</button>
-                        <button class="btn btn-outline" id="tailBtn">Tail (10)</button>
-                        <button class="btn btn-outline" id="infoBtn">Data Info</button>
-                    </div>
+                    <p>Explore your dataset structure and content</p>
                 </div>
                 
-                <div class="data-summary" id="dataSummary">
-                    <div class="summary-grid">
-                        <div class="summary-card">
-                            <h4>Rows</h4>
-                            <span id="rowCount">-</span>
-                        </div>
-                        <div class="summary-card">
-                            <h4>Columns</h4>
-                            <span id="colCount">-</span>
-                        </div>
-                        <div class="summary-card">
-                            <h4>Memory</h4>
-                            <span id="memoryUsage">-</span>
-                        </div>
-                        <div class="summary-card">
-                            <h4>Missing Values</h4>
-                            <span id="missingCount">-</span>
-                        </div>
-                    </div>
+                <div class="preview-controls">
+                    <button class="btn btn-outline" id="headBtn">Head (10)</button>
+                    <button class="btn btn-outline" id="tailBtn">Tail (10)</button>
+                    <button class="btn btn-outline" id="infoBtn">Data Info</button>
                 </div>
-
-                <div class="table-container">
-                    <div class="table-wrapper" id="tableWrapper">
-                        <!-- Table will be dynamically generated here -->
-                    </div>
+                
+                <div id="dataPreviewContent" class="preview-content">
+                    <!-- Data will be displayed here -->
                 </div>
             </section>
 
@@ -156,25 +135,11 @@
                     <div class="control-group">
                         <label>Chart Type:</label>
                         <select id="chartType" class="form-select">
+                            <option value="">Select chart type</option>
                             <option value="histogram">Histogram</option>
                             <option value="boxplot">Box Plot</option>
                             <option value="scatter">Scatter Plot</option>
                             <option value="bar">Bar Chart</option>
-                            <option value="correlation">Correlation Heatmap</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label>X-Axis:</label>
-                        <select id="xAxis" class="form-select">
-                            <!-- Columns will be populated -->
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label>Y-Axis:</label>
-                        <select id="yAxis" class="form-select">
-                            <!-- Columns will be populated -->
                         </select>
                     </div>
 
@@ -191,35 +156,26 @@
             <!-- Export Section -->
             <section id="export" class="section" style="display: none;">
                 <div class="section-header">
-                    <h2><i class="fas fa-download"></i> Export & Report</h2>
-                    <p>Download your analysis and visualizations</p>
+                    <h2><i class="fas fa-eye"></i> Report Preview</h2>
+                    <p>Preview and manage your complete EDA report</p>
                 </div>
 
                 <div class="export-options">
                     <div class="export-card">
-                        <i class="fas fa-file-pdf"></i>
-                        <h4>PDF Report</h4>
-                        <p>Complete EDA report with all findings</p>
-                        <button class="btn btn-primary" id="exportPdfBtn">
-                            <i class="fas fa-download"></i> Export PDF
+                        <i class="fas fa-eye"></i>
+                        <h4>Preview Report</h4>
+                        <p>View complete analysis and charts</p>
+                        <button class="btn btn-primary" id="previewReportBtn">
+                            <i class="fas fa-eye"></i> Preview Report
                         </button>
                     </div>
 
                     <div class="export-card">
-                        <i class="fas fa-file-csv"></i>
-                        <h4>Data Export</h4>
-                        <p>Export cleaned data as CSV</p>
-                        <button class="btn btn-primary" id="exportCsvBtn">
-                            <i class="fas fa-download"></i> Export CSV
-                        </button>
-                    </div>
-
-                    <div class="export-card">
-                        <i class="fas fa-image"></i>
-                        <h4>Chart Export</h4>
-                        <p>Download charts as PNG/SVG</p>
-                        <button class="btn btn-primary" id="exportChartBtn">
-                            <i class="fas fa-download"></i> Export Chart
+                        <i class="fas fa-download"></i>
+                        <h4>Download Report</h4>
+                        <p>Get complete EDA report as PDF</p>
+                        <button class="btn btn-primary" id="downloadReportBtn">
+                            <i class="fas fa-download"></i> Download PDF
                         </button>
                     </div>
                 </div>
