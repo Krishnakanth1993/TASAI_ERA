@@ -604,3 +604,370 @@ tr:hover {
         font-size: 1.5rem;
     }
 }
+
+/* Preview Controls with Active State */
+.preview-controls .btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.preview-controls .btn.active:hover {
+    background: var(--primary-dark);
+}
+
+/* Info Grid Styling */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.info-item {
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+/* Column Info Table */
+.column-info-table {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+.column-info-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+}
+
+.column-info-table th,
+.column-info-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.column-info-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+/* Data Type Labels */
+.data-type {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.data-type.numeric {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.data-type.categorical {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.data-type.datetime {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* Chart Container Responsive */
+.chart-container {
+    min-height: 400px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    overflow: hidden;
+}
+
+.chart-container:empty::after {
+    content: 'Select chart type and columns to generate visualization';
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Axis Selection with Clear Buttons */
+.control-group {
+    position: relative;
+}
+
+.btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Responsive Chart Controls */
+.viz-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: end;
+}
+
+/* Analysis Results Styling */
+.analysis-results {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.analysis-results h3 {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.analysis-results h4 {
+    color: var(--text-primary);
+    margin: 1.5rem 0 1rem 0;
+    font-size: 1.25rem;
+}
+
+.analysis-results h5 {
+    color: var(--text-primary);
+    margin: 1rem 0 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+/* Correlation Analysis */
+.correlation-analysis {
+    margin-top: 1rem;
+}
+
+.correlation-matrix {
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.correlation-matrix table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+}
+
+.correlation-matrix th,
+.correlation-matrix td {
+    padding: 0.75rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.correlation-matrix th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+.correlation-matrix td:first-child {
+    text-align: left;
+    font-weight: 600;
+}
+
+.top-correlations table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+    margin-top: 1rem;
+}
+
+.top-correlations th,
+.top-correlations td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.top-correlations th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+/* Correlation Color Classes */
+.correlation-strong {
+    background: #dc2626;
+    color: white;
+    font-weight: 600;
+}
+
+.correlation-moderate {
+    background: #ea580c;
+    color: white;
+    font-weight: 600;
+}
+
+.correlation-weak {
+    background: #d97706;
+    color: white;
+    font-weight: 600;
+}
+
+.correlation-none {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Outlier Analysis */
+.outlier-analysis {
+    margin-top: 1rem;
+}
+
+.outlier-result {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.outlier-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.outlier-stats p {
+    margin: 0;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.outlier-details {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    margin-top: 1rem;
+}
+
+.outlier-details p {
+    margin: 0.5rem 0;
+}
+
+/* Normality Analysis */
+.normality-analysis {
+    margin-top: 1rem;
+}
+
+.normality-table {
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.normality-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+}
+
+.normality-table th,
+.normality-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.normality-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+.normality-table tr.normal {
+    background: #f0fdf4;
+}
+
+.normality-table tr.not-normal {
+    background: #fef2f2;
+}
+
+.assessment.normal {
+    color: #059669;
+    font-weight: 600;
+}
+
+.assessment.not-normal {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.normality-guide {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    margin-top: 1rem;
+}
+
+.normality-guide h5 {
+    margin-top: 0;
+    color: var(--text-primary);
+}
+
+.normality-guide ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.normality-guide li {
+    margin: 0.25rem 0;
+    color: var(--text-secondary);
+}
+
+/* Stats Table */
+.stats-table {
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.stats-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+}
+
+.stats-table th,
+.stats-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stats-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .correlation-matrix,
+    .normality-table,
+    .stats-table {
+        font-size: 0.875rem;
+    }
+    
+    .correlation-matrix th,
+    .correlation-matrix td,
+    .normality-table th,
+    .normality-table td,
+    .stats-table th,
+    .stats-table td {
+        padding: 0.5rem;
+    }
+    
+    .outlier-stats {
+        grid-template-columns: 1fr;
+    }
+}
