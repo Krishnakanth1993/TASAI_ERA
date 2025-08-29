@@ -763,7 +763,7 @@ function displayAnalysisResults(data) {
         `;
     }
     
-    // Outlier Analysis Section - New
+    // Outlier Analysis Section - Fixed with Real Calculations
     if (data.numerical_analysis) {
         html += `
             <div class="analysis-section">
@@ -791,10 +791,36 @@ function displayAnalysisResults(data) {
                                 const lowerBound = q1 - (1.5 * iqr);
                                 const upperBound = q3 + (1.5 * iqr);
                                 
-                                // Estimate outlier count (this is approximate)
+                                // Calculate actual outliers from the data
+                                let outlierCount = 0;
+                                if (data.preview_head && data.preview_head[column]) {
+                                    // Count outliers in the data
+                                    const columnData = data.preview_head[column];
+                                    Object.values(columnData).forEach(value => {
+                                        if (value !== null && value !== undefined) {
+                                            const numValue = parseFloat(value);
+                                            if (!isNaN(numValue) && (numValue < lowerBound || numValue > upperBound)) {
+                                                outlierCount++;
+                                            }
+                                        }
+                                    });
+                                }
+                                
+                                // Also check tail data if available
+                                if (data.preview_tail && data.preview_tail[column]) {
+                                    const columnData = data.preview_tail[column];
+                                    Object.values(columnData).forEach(value => {
+                                        if (value !== null && value !== undefined) {
+                                            const numValue = parseFloat(value);
+                                            if (!isNaN(numValue) && (numValue < lowerBound || numValue > upperBound)) {
+                                                outlierCount++;
+                                            }
+                                        }
+                                    });
+                                }
+                                
                                 const totalCount = stats.count;
-                                const outlierCount = Math.round(totalCount * 0.05); // Approximate 5% as outliers
-                                const outlierPercentage = ((outlierCount / totalCount) * 100).toFixed(2);
+                                const outlierPercentage = totalCount > 0 ? ((outlierCount / totalCount) * 100).toFixed(2) : '0.00';
                                 
                                 return `
                                     <tr>
@@ -811,6 +837,14 @@ function displayAnalysisResults(data) {
                             }).join('')}
                         </tbody>
                     </table>
+                </div>
+                <div class="outlier-info">
+                    <p><strong>Outlier Detection Method:</strong> IQR (Interquartile Range) Method</p>
+                    <ul>
+                        <li><strong>Lower Bound:</strong> Q1 - 1.5 × IQR</li>
+                        <li><strong>Upper Bound:</strong> Q3 + 1.5 × IQR</li>
+                        <li><strong>Outliers:</strong> Values outside these bounds</li>
+                    </ul>
                 </div>
             </div>
         `;
