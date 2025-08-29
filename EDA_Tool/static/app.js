@@ -1104,7 +1104,7 @@ function displayChart(chartData) {
     }
 }
 
-// Preview report
+// Preview report - Updated to show chart selection
 function previewReport() {
     if (!currentData) {
         alert('Please upload data first');
@@ -1113,139 +1113,24 @@ function previewReport() {
     
     debugLog('Previewing report');
     
+    // Show chart selection interface first
+    showChartSelectionInterface();
+    
     const reportTitle = document.getElementById('reportTitle').value || 'Exploratory Data Analysis Report';
     const reportDescription = document.getElementById('reportDescription').value || '';
-    const includeCharts = document.getElementById('includeCharts').value;
     
     const previewDiv = document.getElementById('reportPreview');
     previewDiv.style.display = 'block';
     
     // Generate report HTML
-    const reportHTML = generateReportHTML(reportTitle, reportDescription, includeCharts);
+    const reportHTML = generateReportHTML(reportTitle, reportDescription);
     previewDiv.innerHTML = reportHTML;
     
     // Scroll to preview
     previewDiv.scrollIntoView({ behavior: 'smooth' });
 }
 
-// Generate report HTML
-function generateReportHTML(title, description, includeCharts) {
-    if (!currentData) return '<div class="alert alert-error">No data available</div>';
-    
-    const dataInfo = currentData.data_info;
-    const timestamp = new Date().toLocaleString();
-    
-    let html = `
-        <div class="report-content">
-            <h1>${title}</h1>
-            <p><strong>Generated:</strong> ${timestamp}</p>
-            ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
-            
-            <h2>Dataset Overview</h2>
-            <p><strong>Shape:</strong> ${dataInfo.shape[0]} rows × ${dataInfo.shape[1]} columns</p>
-            <p><strong>Memory Usage:</strong> ${(dataInfo.memory_usage / 1024).toFixed(2)} KB</p>
-            <p><strong>Missing Values:</strong> ${Object.values(dataInfo.null_counts).reduce((sum, count) => sum + count, 0)}</p>
-            <p><strong>Duplicate Rows:</strong> ${dataInfo.duplicate_rows}</p>
-            
-            <h2>Data Types</h2>
-            <table>
-                <thead>
-                    <tr><th>Column</th><th>Data Type</th></tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(dataInfo.dtypes).map(([col, dtype]) => 
-                        `<tr><td>${col}</td><td>${dtype}</td></tr>`
-                    ).join('')}
-                </tbody>
-            </table>
-            
-            <h2>Missing Values Analysis</h2>
-            <table>
-                <thead>
-                    <tr><th>Column</th><th>Missing Count</th><th>Missing Percentage</th></tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(dataInfo.null_counts).map(([col, count]) => {
-                        const percentage = ((count / dataInfo.shape[0]) * 100).toFixed(2);
-                        return `<tr><td>${col}</td><td>${count}</td><td>${percentage}%</td></tr>`;
-                    }).join('')}
-                </tbody>
-            </table>
-    `;
-    
-    // Add numerical analysis if available
-    if (dataInfo.numerical_analysis) {
-        html += `
-            <h2>Numerical Columns Analysis</h2>
-            <table>
-                <thead>
-                    <tr><th>Column</th><th>Mean</th><th>Median</th><th>Std</th><th>Min</th><th>Max</th><th>Skewness</th><th>Kurtosis</th></tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(dataInfo.numerical_analysis).map(([col, stats]) => 
-                        `<tr>
-                            <td>${col}</td>
-                            <td>${stats.mean?.toFixed(3) || 'N/A'}</td>
-                            <td>${stats.median?.toFixed(3) || 'N/A'}</td>
-                            <td>${stats.std?.toFixed(3) || 'N/A'}</td>
-                            <td>${stats.min || 'N/A'}</td>
-                            <td>${stats.max || 'N/A'}</td>
-                            <td>${stats.skewness?.toFixed(3) || 'N/A'}</td>
-                            <td>${stats.kurtosis?.toFixed(3) || 'N/A'}</td>
-                        </tr>`
-                    ).join('')}
-                </tbody>
-            </table>
-        `;
-    }
-    
-    // Add correlation matrix if available
-    if (dataInfo.correlation) {
-        html += `
-            <h2>Correlation Matrix</h2>
-            <table>
-                <thead>
-                    <tr><th></th>${Object.keys(dataInfo.correlation).map(col => `<th>${col}</th>`).join('')}</tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(dataInfo.correlation).map(([row, correlations]) => 
-                        `<tr>
-                            <td><strong>${row}</strong></td>
-                            ${Object.values(correlations).map(val => 
-                                `<td class="${getCorrelationClass(val)}">${val?.toFixed(3) || 'N/A'}</td>`
-                            ).join('')}
-                        </tr>`
-                    ).join('')}
-                </tbody>
-            </table>
-        `;
-    }
-    
-    // Add selected charts if requested
-    if (includeCharts !== 'none' && addedCharts.length > 0) {
-        html += `<h2>Selected Charts</h2>`;
-        
-        addedCharts.forEach(chart => {
-            html += `
-                <div class="report-chart-section">
-                    <h3>${chart.title}</h3>
-                    ${chart.description ? `<p><strong>Description:</strong> ${chart.description}</p>` : ''}
-                    <p><strong>Chart Type:</strong> ${chart.type} | <strong>Columns:</strong> ${chart.columns.join(', ')}</p>
-                    <div class="report-chart-container">
-                        ${chart.chartHTML}
-                    </div>
-                </div>
-            `;
-        });
-    } else if (includeCharts !== 'none') {
-        html += '<p>No charts added to report yet. Use the "Add to Report" button in the Visualization tab!</p>';
-    }
-    
-    html += '</div>';
-    return html;
-}
-
-// Generate report
+// Generate report - Updated to use selected charts
 function generateReport() {
     if (!currentData) {
         alert('Please upload data first');
@@ -1256,7 +1141,6 @@ function generateReport() {
     
     const reportTitle = document.getElementById('reportTitle').value || 'Exploratory Data Analysis Report';
     const reportDescription = document.getElementById('reportDescription').value || '';
-    const includeCharts = document.getElementById('includeCharts').value;
     const reportFormat = document.getElementById('reportFormat').value;
     
     // Show loading
@@ -1264,7 +1148,7 @@ function generateReport() {
     document.getElementById('reportPreview').style.display = 'none';
     
     // Generate report HTML
-    const reportHTML = generateReportHTML(reportTitle, reportDescription, includeCharts);
+    const reportHTML = generateReportHTML(reportTitle, reportDescription);
     
     // Store report for download
     window.currentReport = {
@@ -1372,7 +1256,7 @@ function showChartLabeling(chartType, columns) {
     labelingSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Add chart to report
+// Add chart to report - Fixed to prevent duplicates
 function addChartToReport() {
     const chartTitle = document.getElementById('chartTitle').value.trim();
     const chartDescription = document.getElementById('chartDescription').value.trim();
@@ -1389,6 +1273,13 @@ function addChartToReport() {
         return;
     }
     
+    // Check if chart with same title already exists
+    const existingChart = addedCharts.find(chart => chart.title === chartTitle);
+    if (existingChart) {
+        alert('A chart with this title already exists. Please use a different title.');
+        return;
+    }
+    
     // Create chart object
     const chartObj = {
         id: Date.now(), // Unique ID
@@ -1397,7 +1288,8 @@ function addChartToReport() {
         type: document.getElementById('chartType').value,
         columns: getSelectedColumns(),
         chartHTML: chartContainer.innerHTML,
-        timestamp: new Date().toLocaleString()
+        timestamp: new Date().toLocaleString(),
+        selected: true // Default to selected
     };
     
     // Add to global array
@@ -1437,7 +1329,7 @@ function clearChartLabeling() {
     document.getElementById('chartDescription').value = '';
 }
 
-// Update added charts summary
+// Update added charts summary - Enhanced with selection interface
 function updateAddedChartsSummary() {
     const summaryDiv = document.getElementById('addedChartsSummary');
     const listDiv = document.getElementById('addedChartsList');
@@ -1464,6 +1356,53 @@ function updateAddedChartsSummary() {
             </div>
         </div>
     `).join('');
+}
+
+// Show chart selection interface in report tab
+function showChartSelectionInterface() {
+    const interfaceDiv = document.getElementById('chartSelectionInterface');
+    const listDiv = document.getElementById('chartSelectionList');
+    
+    if (addedCharts.length === 0) {
+        interfaceDiv.style.display = 'none';
+        return;
+    }
+    
+    interfaceDiv.style.display = 'block';
+    
+    listDiv.innerHTML = addedCharts.map(chart => `
+        <div class="chart-selection-item ${chart.selected ? 'selected' : ''}" data-chart-id="${chart.id}">
+            <div class="chart-selection-header">
+                <div class="chart-selection-info">
+                    <h4>${chart.title}</h4>
+                    <p><strong>Type:</strong> ${chart.type} | <strong>Columns:</strong> ${chart.columns.join(', ')}</p>
+                </div>
+                <div class="chart-selection-toggle">
+                    <label>
+                        <input type="checkbox" 
+                               ${chart.selected ? 'checked' : ''} 
+                               onchange="toggleChartSelection(${chart.id}, this.checked)">
+                        Include in Report
+                    </label>
+                </div>
+            </div>
+            ${chart.description ? `<div class="chart-selection-description">${chart.description}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+// Toggle chart selection
+function toggleChartSelection(chartId, selected) {
+    const chart = addedCharts.find(c => c.id === chartId);
+    if (chart) {
+        chart.selected = selected;
+        
+        // Update visual state
+        const itemElement = document.querySelector(`[data-chart-id="${chartId}"]`);
+        if (itemElement) {
+            itemElement.classList.toggle('selected', selected);
+        }
+    }
 }
 
 // Remove chart from report

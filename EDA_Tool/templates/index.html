@@ -164,21 +164,19 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="includeCharts">Include Charts:</label>
-                        <select id="includeCharts" class="form-control">
-                            <option value="all">All Generated Charts</option>
-                            <option value="selected">Selected Charts Only</option>
-                            <option value="none">No Charts</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="reportFormat">Report Format:</label>
                         <select id="reportFormat" class="form-control">
                             <option value="html">HTML Report</option>
                             <option value="pdf">PDF Report</option>
                         </select>
                     </div>
+                </div>
+                
+                <!-- Chart Selection Interface -->
+                <div id="chartSelectionInterface" class="chart-selection-interface" style="display: none;">
+                    <h3><i class="fas fa-chart-bar"></i> Select Charts for Report</h3>
+                    <p>Choose which charts to include in your report:</p>
+                    <div id="chartSelectionList"></div>
                 </div>
                 
                 <div class="report-actions">

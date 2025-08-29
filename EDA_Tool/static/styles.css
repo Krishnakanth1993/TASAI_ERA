@@ -1703,3 +1703,96 @@ body {
     }
 }
 
+/* Chart Selection Interface */
+.chart-selection-interface {
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 25px;
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 25px var(--shadow-color);
+}
+
+.chart-selection-interface h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-selection-interface p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.chart-selection-item {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.chart-selection-item.selected {
+    border-color: var(--primary-color);
+    background: var(--bg-tertiary);
+}
+
+.chart-selection-item:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.1);
+}
+
+.chart-selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.chart-selection-info h4 {
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+}
+
+.chart-selection-info p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.chart-selection-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-selection-toggle label {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.chart-selection-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.chart-selection-description {
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    border-left: 3px solid var(--primary-color);
+}
+
