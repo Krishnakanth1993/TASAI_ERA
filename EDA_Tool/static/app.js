@@ -92,48 +92,144 @@ function displayDataPreview(data) {
     const infoDiv = document.getElementById('dataInfo');
     const tableContainer = document.getElementById('dataTableContainer');
 
-    // Display data info (df.info equivalent)
-    infoDiv.innerHTML = `
+    // Extract data from the correct structure
+    const dataInfo = data.data_info;
+    
+    // Safely get values with fallbacks
+    const shape = dataInfo?.shape || [0, 0];
+    const memoryUsage = dataInfo?.memory_usage || 0;
+    const nullCounts = dataInfo?.null_counts || {};
+    const duplicateRows = dataInfo?.duplicate_rows || 0;
+    const dtypes = dataInfo?.dtypes || {};
+    
+    // Calculate missing values total
+    const missingTotal = Object.values(nullCounts).reduce((sum, count) => sum + (count || 0), 0);
+    
+    // Calculate data quality metrics
+    const totalCells = shape[0] * shape[1];
+    const completeness = totalCells > 0 ? ((totalCells - missingTotal) / totalCells * 100).toFixed(2) : '0.00';
+    const missingRate = totalCells > 0 ? (missingTotal / totalCells * 100).toFixed(2) : '0.00';
+    const duplicateRate = shape[0] > 0 ? (duplicateRows / shape[0] * 100).toFixed(2) : '0.00';
+
+    debugLog('Processed values:', {
+        shape,
+        memoryUsage,
+        missingTotal,
+        duplicateRows,
+        completeness,
+        missingRate,
+        duplicateRate
+    });
+
+    // Create the HTML content
+    const htmlContent = `
+        <!-- Summary Stats Grid (1x4) - Single Row -->
+        <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 30px;">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-table"></i>
+                    <h3>Dataset Shape</h3>
+                </div>
+                <div class="stat-content">
+                    <p><strong>Rows:</strong> ${shape[0]}</p>
+                    <p><strong>Columns:</strong> ${shape[1]}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-hdd"></i>
+                    <h3>Memory Usage</h3>
+                </div>
+                <div class="stat-content">
+                    <p><strong>Size:</strong> ${(memoryUsage / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Missing Values</h3>
+                </div>
+                <div class="stat-content">
+                    <p><strong>Total:</strong> ${missingTotal}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-copy"></i>
+                    <h3>Duplicate Rows</h3>
+                </div>
+                <div class="stat-content">
+                    <p><strong>Count:</strong> ${duplicateRows}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dataset Information Table (df.info equivalent) -->
+        <h4 style="margin: 20px 0 15px 0; color: var(--text-primary);">Dataset Information</h4>
         <table class="data-info-table">
             <thead>
                 <tr>
                     <th>Column</th>
                     <th>Non-Null Count</th>
+                    <th>Missing Values</th>
                     <th>Dtype</th>
                     <th>Memory Usage</th>
                 </tr>
             </thead>
             <tbody>
-                ${Object.entries(data.data_info.dtypes).map(([col, dtype]) => `
-                    <tr>
-                        <td><strong>${col}</strong></td>
-                        <td>${data.data_info.shape[0] - data.data_info.null_counts[col]}</td>
-                        <td>${dtype}</td>
-                        <td>${(data.data_info.memory_usage / data.data_info.shape[1] / 1024).toFixed(2)} KB</td>
-                    </tr>
-                `).join('')}
+                ${Object.entries(dtypes).map(([col, dtype]) => {
+                    const nullCount = nullCounts[col] || 0;
+                    const nonNullCount = shape[0] - nullCount;
+                    const colMemory = (memoryUsage / shape[1] / 1024).toFixed(2);
+                    
+                    return `
+                        <tr>
+                            <td><strong>${col}</strong></td>
+                            <td>${nonNullCount}</td>
+                            <td>${nullCount}</td>
+                            <td>${dtype}</td>
+                            <td>${colMemory} KB</td>
+                        </tr>
+                    `;
+                }).join('')}
             </tbody>
         </table>
-        <div class="stats-grid" style="margin-top: 20px;">
+        
+        <!-- File Information -->
+        <h4 style="margin: 30px 0 15px 0; color: var(--text-primary);">File Information</h4>
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
             <div class="stat-card">
-                <h3>Dataset Shape</h3>
-                <p><strong>Rows:</strong> ${data.data_info.shape[0]}</p>
-                <p><strong>Columns:</strong> ${data.data_info.shape[1]}</p>
+                <div class="stat-header">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>File Details</h3>
+                </div>
+                <div class="stat-content">
+                    <p><strong>Upload Time:</strong> ${new Date().toLocaleString()}</p>
+                    <p><strong>File Size:</strong> ${(memoryUsage / 1024 / 1024).toFixed(2)} MB</p>
+                    <p><strong>Data Format:</strong> Table</p>
+                    <p><strong>Encoding:</strong> UTF-8</p>
+                </div>
             </div>
             <div class="stat-card">
-                <h3>Memory Usage</h3>
-                <p><strong>Size:</strong> ${(data.data_info.memory_usage / 1024 / 1024).toFixed(2)} MB</p>
-            </div>
-            <div class="stat-card">
-                <h3>Missing Values</h3>
-                <p><strong>Total:</strong> ${Object.values(data.data_info.null_counts).reduce((a, b) => a + b, 0)}</p>
-            </div>
-            <div class="stat-card">
-                <h3>Duplicate Rows</h3>
-                <p><strong>Count:</strong> ${data.data_info.duplicate_rows}</p>
+                <div class="stat-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Data Quality</h3>
+                </div>
+                <div class="stat-content">
+                    <p><strong>Completeness:</strong> ${completeness}%</p>
+                    <p><strong>Missing Rate:</strong> ${missingRate}%</p>
+                    <p><strong>Duplicate Rate:</strong> ${duplicateRate}%</p>
+                </div>
             </div>
         </div>
     `;
+
+    // Set the HTML content
+    infoDiv.innerHTML = htmlContent;
+    
+    // Debug: Check if content was set
+    debugLog('HTML content length:', htmlContent.length);
+    debugLog('First stat card content:', infoDiv.querySelector('.stat-card .stat-content')?.innerHTML);
 
     // Show initial data table (HEAD by default)
     showDataView('head');
