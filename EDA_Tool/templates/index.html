@@ -82,16 +82,17 @@
                 <h2>Data Analysis</h2>
                 <p>Click the analyze button to get comprehensive statistics and insights about your dataset.</p>
                 
-                <button class="btn" onclick="analyzeData()">
+                <button class="btn" onclick="startAnalysis()">
                     <i class="fas fa-play"></i> Run Analysis
                 </button>
 
-                <div id="analysisLoading" class="loading">
-                    <div class="spinner"></div>
-                    <p>Analyzing your data...</p>
+                <div id="analysisContent">
+                    <!-- Analysis results will be displayed here -->
+                    <div class="analysis-placeholder">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>Click "Run Analysis" to analyze your dataset</p>
+                    </div>
                 </div>
-
-                <div id="analysisResults"></div>
             </div>
 
             <!-- Visualization Tab -->

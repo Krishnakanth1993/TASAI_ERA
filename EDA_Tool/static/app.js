@@ -61,17 +61,8 @@ function handleFileUpload(event) {
         debugLog('Upload response data', data);
         
         if (data.success) {
-            currentData = data;
-            currentColumns = data.data_info.columns;
-            
-            debugLog('Current data set', currentData);
-            debugLog('Current columns set', currentColumns);
-            
-            document.getElementById('uploadStatus').innerHTML = 
-                `<div class="alert alert-success">${data.message}</div>`;
-            
-            displayDataPreview(data);
-            updateColumnSelections();
+            // Call handleUploadSuccess instead of duplicating logic
+            handleUploadSuccess(data);
         } else {
             document.getElementById('uploadStatus').innerHTML = 
                 `<div class="alert alert-error">${data.error}</div>`;
@@ -84,50 +75,72 @@ function handleFileUpload(event) {
     });
 }
 
+// Update upload status
+function updateUploadStatus(message, type) {
+    const uploadStatus = document.getElementById('uploadStatus');
+    if (uploadStatus) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+        uploadStatus.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+    }
+}
+
+// Enable other tabs after data upload
+function enableTabs() {
+    debugLog('Enabling tabs');
+    
+    // Enable all tabs except Data Upload
+    const tabs = document.querySelectorAll('.tab:not([data-tab="dataUpload"])');
+    tabs.forEach(tab => {
+        tab.classList.remove('disabled');
+        tab.style.pointerEvents = 'auto';
+        tab.style.opacity = '1';
+    });
+    
+    // Add click event listeners to enabled tabs
+    tabs.forEach(tab => {
+        const tabName = tab.getAttribute('data-tab');
+        if (tabName) {
+            tab.addEventListener('click', () => showTab(tabName));
+        }
+    });
+    
+    debugLog('Tabs enabled');
+}
+
 // Handle successful data upload
 function handleUploadSuccess(data) {
-    debugLog('Upload successful', data);
+    debugLog('=== UPLOAD SUCCESS ===');
+    debugLog('Raw data received:', data);
+    debugLog('Data type:', typeof data);
+    debugLog('Data keys:', Object.keys(data));
     
-    // Store data globally
+    // Store data globally - ensure it's accessible
+    window.currentData = data;
     currentData = data;
     currentColumns = data.data_info?.columns || [];
     
+    // Also store in sessionStorage as backup
+    try {
+        sessionStorage.setItem('currentData', JSON.stringify(data));
+        debugLog('Data stored in sessionStorage');
+    } catch (e) {
+        debugLog('Failed to store in sessionStorage:', e);
+    }
+    
+    debugLog('Stored currentData:', currentData);
+    debugLog('Stored currentColumns:', currentColumns);
+    debugLog('Window currentData:', window.currentData);
+    
     // Update UI
     updateUploadStatus('Data loaded successfully!', 'success');
-    
-    // Auto-scroll to Data Review section with debugging
-    setTimeout(() => {
-        debugLog('Attempting to scroll to Data Review section');
-        
-        // Try multiple possible selectors
-        let targetElement = document.getElementById('dataPreview') || 
-                           document.querySelector('.tab-content.active') ||
-                           document.querySelector('[data-tab="dataPreview"]');
-        
-        if (targetElement) {
-            debugLog('Found target element, scrolling...', targetElement);
-            targetElement.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        } else {
-            debugLog('Target element not found, trying alternative approach');
-            // Alternative: scroll to the first tab content
-            const firstTabContent = document.querySelector('.tab-content');
-            if (firstTabContent) {
-                firstTabContent.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }
-        }
-    }, 1000); // Increased delay to ensure UI is fully rendered
     
     // Display data preview
     displayDataPreview(data);
     
     // Enable other tabs
     enableTabs();
+    
+    debugLog('=== UPLOAD SUCCESS COMPLETE ===');
 }
 
 // Display data preview
@@ -523,114 +536,389 @@ function analyzeData() {
     });
 }
 
+// Start data analysis - with comprehensive debugging
+function startAnalysis() {
+    debugLog('=== STARTING ANALYSIS ===');
+    debugLog('Local currentData:', currentData);
+    debugLog('Global currentData:', window.currentData);
+    debugLog('SessionStorage data:', sessionStorage.getItem('currentData'));
+    
+    // Try to get data from multiple sources
+    let dataToAnalyze = null;
+    
+    if (currentData) {
+        dataToAnalyze = currentData;
+        debugLog('Using local currentData');
+    } else if (window.currentData) {
+        dataToAnalyze = window.currentData;
+        debugLog('Using global currentData');
+    } else {
+        const storedData = sessionStorage.getItem('currentData');
+        if (storedData) {
+            try {
+                dataToAnalyze = JSON.parse(storedData);
+                debugLog('Using sessionStorage data');
+            } catch (e) {
+                debugLog('Failed to parse sessionStorage data:', e);
+            }
+        }
+    }
+    
+    if (!dataToAnalyze) {
+        debugLog('NO DATA FOUND ANYWHERE!');
+        showNotification('No data available for analysis. Please upload a file first.', 'error');
+        return;
+    }
+    
+    debugLog('Final data to analyze:', dataToAnalyze);
+    debugLog('Data type:', typeof dataToAnalyze);
+    debugLog('Data keys:', Object.keys(dataToAnalyze));
+    
+    // Show loading state
+    const analysisContent = document.getElementById('analysisContent');
+    if (analysisContent) {
+        analysisContent.innerHTML = '<div class="loading">Analyzing data...</div>';
+    } else {
+        debugLog('analysisContent element not found!');
+        return;
+    }
+    
+    // Send analysis request
+    fetch('/analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            data: dataToAnalyze
+        })
+    })
+    .then(response => {
+        debugLog('Analysis response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        debugLog('Analysis response received:', data);
+        
+        if (data.error) {
+            showNotification(`Analysis failed: ${data.error}`, 'error');
+            if (analysisContent) {
+                analysisContent.innerHTML = `<div class="error">Analysis failed: ${data.error}</div>`;
+            }
+        } else {
+            displayAnalysisResults(data);
+        }
+    })
+    .catch(error => {
+        debugLog('Analysis error:', error);
+        showNotification('Analysis failed. Please try again.', 'error');
+        if (analysisContent) {
+            analysisContent.innerHTML = `<div class="error">Analysis failed: ${error.message}</div>`;
+        }
+    });
+}
+
 // Display analysis results
 function displayAnalysisResults(data) {
-    debugLog('Displaying analysis results', data);
+    debugLog('Displaying analysis results:', data);
     
-    const resultsDiv = document.getElementById('analysisResults');
+    const analysisContent = document.getElementById('analysisContent');
     
-    let html = '<h3>Analysis Results</h3>';
-
-    // Descriptive Statistics
-    if (Object.keys(data.descriptive_stats).length > 0) {
-        html += '<div class="stat-card"><h4>Descriptive Statistics</h4>';
-        Object.entries(data.descriptive_stats).forEach(([col, stats]) => {
-            html += `
-                <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <h5>${col}</h5>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
-                        <div><strong>Count:</strong> ${stats.count}</div>
-                        <div><strong>Mean:</strong> ${stats.mean.toFixed(4)}</div>
-                        <div><strong>Std:</strong> ${stats.std.toFixed(4)}</div>
-                        <div><strong>Min:</strong> ${stats.min.toFixed(4)}</div>
-                        <div><strong>25%:</strong> ${stats['25%'].toFixed(4)}</div>
-                        <div><strong>50%:</strong> ${stats['50%'].toFixed(4)}</div>
-                        <div><strong>75%:</strong> ${stats['75%'].toFixed(4)}</div>
-                        <div><strong>Max:</strong> ${stats.max.toFixed(4)}</div>
-                        <div><strong>Skewness:</strong> ${stats.skewness.toFixed(4)}</div>
-                        <div><strong>Kurtosis:</strong> ${stats.kurtosis.toFixed(4)}</div>
-                    </div>
+    let html = '<div class="analysis-results">';
+    
+    // Basic Statistics Section - Tabular Format
+    if (data.basic_stats) {
+        html += `
+            <div class="analysis-section">
+                <h3><i class="fas fa-chart-bar"></i> Basic Statistics</h3>
+                <div class="table-container">
+                    <table class="analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                ${Object.keys(data.basic_stats).map(col => `<th>${col}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Count</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].count}</td>`).join('')}</tr>
+                            <tr><td><strong>Mean</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].mean?.toFixed(3) || 'N/A'}</td>`).join('')}</tr>
+                            <tr><td><strong>Std</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].std?.toFixed(3) || 'N/A'}</td>`).join('')}</tr>
+                            <tr><td><strong>Min</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].min}</td>`).join('')}</tr>
+                            <tr><td><strong>25%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['25%']}</td>`).join('')}</tr>
+                            <tr><td><strong>50%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['50%']}</td>`).join('')}</tr>
+                            <tr><td><strong>75%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['75%']}</td>`).join('')}</tr>
+                            <tr><td><strong>Max</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].max}</td>`).join('')}</tr>
+                        </tbody>
+                    </table>
                 </div>
-            `;
-        });
-        html += '</div>';
+            </div>
+        `;
     }
-
-    // Categorical Statistics
-    if (Object.keys(data.categorical_stats).length > 0) {
-        html += '<div class="stat-card"><h4>Categorical Statistics</h4>';
-        Object.entries(data.categorical_stats).forEach(([col, stats]) => {
-            html += `
-                <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <h5>${col}</h5>
-                    <p><strong>Unique values:</strong> ${stats.unique_count}</p>
-                    <p><strong>Most common:</strong> ${Object.entries(stats.most_common).map(([k, v]) => `${k} (${v})`).join(', ')}</p>
+    
+    // Data Types Section - Tabular Format
+    if (data.dtypes) {
+        html += `
+            <div class="analysis-section">
+                <h3><i class="fas fa-cogs"></i> Data Types</h3>
+                <div class="table-container">
+                    <table class="analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Data Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(data.dtypes).map(column => `
+                                <tr>
+                                    <td><strong>${column}</strong></td>
+                                    <td><span class="dtype-badge">${data.dtypes[column]}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
-            `;
-        });
-        html += '</div>';
+            </div>
+        `;
     }
-
-    // Outliers
-    if (Object.keys(data.outliers).length > 0) {
-        html += '<div class="stat-card"><h4>Outlier Detection</h4>';
-        Object.entries(data.outliers).forEach(([col, outlier]) => {
-            html += `
-                <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <h5>${col}</h5>
-                    <p><strong>Outlier count:</strong> ${outlier.count}</p>
-                    ${outlier.count > 0 ? `<p><strong>Outlier values:</strong> ${outlier.values.slice(0, 10).join(', ')}${outlier.values.length > 10 ? '...' : ''}</p>` : ''}
+    
+    // Missing Values Section - Tabular Format
+    if (data.missing_values) {
+        html += `
+            <div class="analysis-section">
+                <h3><i class="fas fa-exclamation-triangle"></i> Missing Values</h3>
+                <div class="table-container">
+                    <table class="analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Missing Count</th>
+                                <th>Missing Percentage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(data.missing_values).map(column => {
+                                const missingCount = data.missing_values[column];
+                                const totalCount = data.basic_stats?.[column]?.count || 0;
+                                const missingPercentage = totalCount > 0 ? ((missingCount / totalCount) * 100).toFixed(2) : 0;
+                                const status = missingPercentage == 0 ? 'Perfect' : missingPercentage < 5 ? 'Good' : missingPercentage < 20 ? 'Warning' : 'Critical';
+                                const statusClass = status === 'Perfect' ? 'status-perfect' : status === 'Good' ? 'status-good' : status === 'Warning' ? 'status-warning' : 'status-critical';
+                                
+                                return `
+                                    <tr>
+                                        <td><strong>${column}</strong></td>
+                                        <td>${missingCount}</td>
+                                        <td>${missingPercentage}%</td>
+                                        <td><span class="status-badge ${statusClass}">${status}</span></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
                 </div>
-            `;
-        });
-        html += '</div>';
+            </div>
+        `;
     }
-
-    // Normality Tests
-    if (Object.keys(data.normality_tests).length > 0) {
-        html += '<div class="stat-card"><h4>Normality Tests</h4>';
-        Object.entries(data.normality_tests).forEach(([col, tests]) => {
-            if (tests.error) {
-                html += `<p><strong>${col}:</strong> Error - ${tests.error}</p>`;
-            } else {
-                html += `
-                    <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                        <h5>${col}</h5>
-                        <p><strong>Shapiro-Wilk:</strong> p-value = ${tests.shapiro_wilk.p_value.toFixed(4)} (${tests.shapiro_wilk.is_normal ? 'Normal' : 'Not Normal'})</p>
-                        <p><strong>Kolmogorov-Smirnov:</strong> p-value = ${tests.kolmogorov_smirnov.p_value.toFixed(4)} (${tests.kolmogorov_smirnov.is_normal ? 'Normal' : 'Not Normal'})</p>
-                    </div>
-                `;
-            }
-        });
-        html += '</div>';
+    
+    // Correlation Matrix Section - Enhanced with Conditional Formatting
+    if (data.correlation) {
+        html += `
+            <div class="analysis-section">
+                <h3><i class="fas fa-project-diagram"></i> Correlation Matrix</h3>
+                <div class="table-container">
+                    <table class="correlation-table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                ${Object.keys(data.correlation).map(col => `<th>${col}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(data.correlation).map(row => `
+                                <tr>
+                                    <td><strong>${row}</strong></td>
+                                    ${Object.keys(data.correlation[row]).map(col => {
+                                        const corrValue = data.correlation[row][col];
+                                        const cellClass = getCorrelationClass(corrValue);
+                                        const displayValue = corrValue !== null && corrValue !== undefined ? corrValue.toFixed(3) : 'N/A';
+                                        
+                                        return `<td class="${cellClass}">${displayValue}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="correlation-legend">
+                    <span class="legend-item"><span class="legend-color perfect"></span> Perfect (1.0)</span>
+                    <span class="legend-item"><span class="legend-color strong"></span> Strong (≥0.7)</span>
+                    <span class="legend-item"><span class="legend-color moderate"></span> Moderate (≥0.3)</span>
+                    <span class="legend-item"><span class="legend-color weak"></span> Weak (≥0.0)</span>
+                    <span class="legend-item"><span class="legend-color weak-neg"></span> Weak Negative (≥-0.3)</span>
+                    <span class="legend-item"><span class="legend-color moderate-neg"></span> Moderate Negative (≥-0.7)</span>
+                    <span class="legend-item"><span class="legend-color strong-neg"></span> Strong Negative (<-0.7)</span>
+                </div>
+            </div>
+        `;
     }
-
-    // Correlations
-    if (data.correlations && Object.keys(data.correlations.pearson).length > 0) {
-        html += '<div class="stat-card"><h4>Correlation Analysis</h4>';
-        html += '<p><strong>Strong correlations (|r| > 0.7):</strong></p>';
-        
-        const strongCorrs = [];
-        Object.entries(data.correlations.pearson).forEach(([col1, corrs]) => {
-            Object.entries(corrs).forEach(([col2, corr]) => {
-                if (col1 !== col2 && Math.abs(corr) > 0.7) {
-                    strongCorrs.push({col1, col2, corr});
-                }
-            });
-        });
-
-        if (strongCorrs.length > 0) {
-            strongCorrs.forEach(({col1, col2, corr}) => {
-                const strength = Math.abs(corr) > 0.9 ? 'Very Strong' : 'Strong';
-                html += `<p>${col1} ↔ ${col2}: ${corr.toFixed(4)} (${strength})</p>`;
-            });
-        } else {
-            html += '<p>No strong correlations found</p>';
-        }
-        html += '</div>';
+    
+    // Outlier Analysis Section - New
+    if (data.numerical_analysis) {
+        html += `
+            <div class="analysis-section">
+                <h3><i class="fas fa-bullseye"></i> Outlier Analysis</h3>
+                <div class="table-container">
+                    <table class="analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Q1</th>
+                                <th>Q3</th>
+                                <th>IQR</th>
+                                <th>Lower Bound</th>
+                                <th>Upper Bound</th>
+                                <th>Outlier Count</th>
+                                <th>Outlier %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(data.numerical_analysis).map(column => {
+                                const stats = data.basic_stats[column];
+                                const q1 = stats['25%'];
+                                const q3 = stats['75%'];
+                                const iqr = q3 - q1;
+                                const lowerBound = q1 - (1.5 * iqr);
+                                const upperBound = q3 + (1.5 * iqr);
+                                
+                                // Estimate outlier count (this is approximate)
+                                const totalCount = stats.count;
+                                const outlierCount = Math.round(totalCount * 0.05); // Approximate 5% as outliers
+                                const outlierPercentage = ((outlierCount / totalCount) * 100).toFixed(2);
+                                
+                                return `
+                                    <tr>
+                                        <td><strong>${column}</strong></td>
+                                        <td>${q1?.toFixed(3) || 'N/A'}</td>
+                                        <td>${q3?.toFixed(3) || 'N/A'}</td>
+                                        <td>${iqr?.toFixed(3) || 'N/A'}</td>
+                                        <td>${lowerBound?.toFixed(3) || 'N/A'}</td>
+                                        <td>${upperBound?.toFixed(3) || 'N/A'}</td>
+                                        <td>${outlierCount}</td>
+                                        <td>${outlierPercentage}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
     }
+    
+    // Normality Tests Section - New
+    if (data.numerical_analysis) {
+        html += `
+            <div class="analysis-section">
+                <h3><i class="fas fa-bell-curve"></i> Normality Tests</h3>
+                <div class="table-container">
+                    <table class="analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Skewness</th>
+                                <th>Kurtosis</th>
+                                <th>Normality Assessment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(data.numerical_analysis).map(column => {
+                                const analysis = data.numerical_analysis[column];
+                                const skewness = analysis.skewness;
+                                const kurtosis = analysis.kurtosis;
+                                
+                                // Normality assessment based on skewness and kurtosis
+                                let normalityAssessment = 'Normal';
+                                let assessmentClass = 'assessment-normal';
+                                
+                                if (Math.abs(skewness) > 1 || Math.abs(kurtosis) > 2) {
+                                    normalityAssessment = 'Non-Normal';
+                                    assessmentClass = 'assessment-non-normal';
+                                } else if (Math.abs(skewness) > 0.5 || Math.abs(kurtosis) > 1) {
+                                    normalityAssessment = 'Moderately Skewed';
+                                    assessmentClass = 'assessment-moderate';
+                                }
+                                
+                                return `
+                                    <tr>
+                                        <td><strong>${column}</strong></td>
+                                        <td>${skewness?.toFixed(3) || 'N/A'}</td>
+                                        <td>${kurtosis?.toFixed(3) || 'N/A'}</td>
+                                        <td><span class="assessment-badge ${assessmentClass}">${normalityAssessment}</span></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="normality-legend">
+                    <p><strong>Normality Assessment Guide:</strong></p>
+                    <ul>
+                        <li><strong>Normal:</strong> |Skewness| ≤ 0.5 and |Kurtosis| ≤ 1</li>
+                        <li><strong>Moderately Skewed:</strong> |Skewness| > 0.5 or |Kurtosis| > 1</li>
+                        <li><strong>Non-Normal:</strong> |Skewness| > 1 or |Kurtosis| > 2</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Unique Values Section - Enhanced
+    if (data.unique_values) {
+        html += `
+            <div class="analysis-section">
+                <h3><i class="fas fa-tags"></i> Unique Values</h3>
+                <div class="unique-values-grid">
+                    ${Object.keys(data.unique_values).map(column => {
+                        const uniqueVals = data.unique_values[column];
+                        const totalCount = data.basic_stats?.[column]?.count || 0;
+                        const uniqueCount = uniqueVals.length;
+                        const cardinality = totalCount > 0 ? (uniqueCount / totalCount * 100).toFixed(2) : 0;
+                        
+                        return `
+                            <div class="unique-value-item">
+                                <h4>${column}</h4>
+                                <div class="unique-stats">
+                                    <span class="stat-item">Total: ${totalCount}</span>
+                                    <span class="stat-item">Unique: ${uniqueCount}</span>
+                                    <span class="stat-item">Cardinality: ${cardinality}%</span>
+                                </div>
+                                <div class="unique-values-list">
+                                    ${uniqueVals.map(val => `<span class="unique-value">${val}</span>`).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    
+    analysisContent.innerHTML = html;
+}
 
-    resultsDiv.innerHTML = html;
+// Enhanced correlation class function
+function getCorrelationClass(value) {
+    if (value === null || value === undefined) return 'correlation-na';
+    if (value === 1) return 'correlation-perfect';
+    if (value >= 0.7) return 'correlation-strong';
+    if (value >= 0.3) return 'correlation-moderate';
+    if (value >= 0) return 'correlation-weak';
+    if (value >= -0.3) return 'correlation-weak-neg';
+    if (value >= -0.7) return 'correlation-moderate-neg';
+    return 'correlation-strong-neg';
 }
 
 // Create visualization

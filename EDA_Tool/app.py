@@ -320,29 +320,69 @@ def upload_file():
 def analyze_data():
     try:
         if 'data' not in session:
-            return jsonify({'error': 'No data uploaded'}), 400
+            return jsonify({'error': 'No data available for analysis'}), 400
         
-        # Reconstruct DataFrame from session
-        df = pd.DataFrame.from_dict(session['data'])
+        data = session['data']
+        df = pd.DataFrame(data)
         
-        # Get all analysis results
-        descriptive_stats = get_descriptive_stats(df)
-        categorical_stats = get_categorical_stats(df)
-        outliers = detect_outliers(df)
-        normality_tests = run_normality_tests(df)
-        correlations = get_correlations(df)
+        # Convert boolean columns to string to avoid JSON serialization issues
+        for col in df.columns:
+            if df[col].dtype == 'bool':
+                df[col] = df[col].astype(str)
         
-        return jsonify({
-            'success': True,
-            'descriptive_stats': descriptive_stats,
-            'categorical_stats': categorical_stats,
-            'outliers': outliers,
-            'normality_tests': normality_tests,
-            'correlations': correlations
-        })
+        # Perform analysis
+        analysis_results = {}
+        
+        # Basic statistics
+        analysis_results['basic_stats'] = df.describe().to_dict()
+        
+        # Data types
+        analysis_results['dtypes'] = {col: str(dtype) for col, dtype in df.dtypes.items()}
+        
+        # Missing values
+        analysis_results['missing_values'] = df.isnull().sum().to_dict()
+        
+        # Unique values for categorical columns
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+        analysis_results['unique_values'] = {}
+        for col in categorical_cols:
+            unique_vals = df[col].unique()
+            # Convert numpy types to native Python types
+            analysis_results['unique_values'][col] = [str(val) if pd.isna(val) else val for val in unique_vals]
+        
+        # Numerical columns analysis
+        numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns
+        analysis_results['numerical_analysis'] = {}
+        
+        for col in numerical_cols:
+            col_data = df[col].dropna()
+            if len(col_data) > 0:
+                analysis_results['numerical_analysis'][col] = {
+                    'mean': float(col_data.mean()) if not pd.isna(col_data.mean()) else None,
+                    'median': float(col_data.median()) if not pd.isna(col_data.median()) else None,
+                    'std': float(col_data.std()) if not pd.isna(col_data.std()) else None,
+                    'min': float(col_data.min()) if not pd.isna(col_data.min()) else None,
+                    'max': float(col_data.max()) if not pd.isna(col_data.max()) else None,
+                    'skewness': float(col_data.skew()) if not pd.isna(col_data.skew()) else None,
+                    'kurtosis': float(col_data.kurtosis()) if not pd.isna(col_data.kurtosis()) else None
+                }
+        
+        # Correlation matrix for numerical columns
+        if len(numerical_cols) > 1:
+            corr_matrix = df[numerical_cols].corr()
+            # Convert correlation matrix to serializable format
+            analysis_results['correlation'] = {}
+            for i, col1 in enumerate(numerical_cols):
+                analysis_results['correlation'][col1] = {}
+                for j, col2 in enumerate(numerical_cols):
+                    corr_val = corr_matrix.iloc[i, j]
+                    analysis_results['correlation'][col1][col2] = float(corr_val) if not pd.isna(corr_val) else None
+        
+        return jsonify(analysis_results)
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Analysis error: {str(e)}")
+        return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 @app.route('/visualize', methods=['POST'])
 def create_visualization():
