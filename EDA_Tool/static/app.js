@@ -145,6 +145,9 @@ function displayDataPreview(data) {
 function showDataView(view) {
     currentDataView = view;
     
+    debugLog(`Switching to ${view} view`);
+    debugLog('Current data:', currentData);
+    
     // Update button states - Fix: Don't rely on event.target
     document.querySelectorAll('.data-view-toggle .btn').forEach(btn => {
         btn.classList.remove('active');
@@ -161,11 +164,13 @@ function showDataView(view) {
     const tableContainer = document.getElementById('dataTableContainer');
     
     if (view === 'head') {
+        debugLog('Displaying HEAD data:', currentData.preview_head);
         tableContainer.innerHTML = `
             <h4>First 10 rows:</h4>
             ${createDataTable(currentData.preview_head, 'head')}
         `;
     } else {
+        debugLog('Displaying TAIL data:', currentData.preview_tail);
         tableContainer.innerHTML = `
             <h4>Last 10 rows:</h4>
             ${createDataTable(currentData.preview_tail, 'tail')}
@@ -173,7 +178,7 @@ function showDataView(view) {
     }
 }
 
-// Create data table HTML - UNPIVOTED VERSION
+// Create data table HTML - UNPIVOTED VERSION with better debugging
 function createDataTable(data, type) {
     debugLog(`Creating ${type} data table`, data);
     
@@ -185,9 +190,35 @@ function createDataTable(data, type) {
     // The data structure from backend is: {column_name: {row_index: value}}
     // We need to unpivot this to show rows as rows and columns as columns
     const columns = Object.keys(data);
-    const maxRows = Math.max(...columns.map(col => Object.keys(data[col]).length));
+    
+    // Fix: Handle empty data more gracefully
+    if (columns.length === 0) {
+        debugLog(`No columns found for ${type} table`);
+        return '<p>No data available</p>';
+    }
+    
+    // Debug: Log the structure of each column
+    columns.forEach(col => {
+        debugLog(`Column ${col} data:`, data[col]);
+    });
+    
+    const maxRows = Math.max(...columns.map(col => {
+        const colData = data[col];
+        if (!colData || typeof colData !== 'object') {
+            debugLog(`Column ${col} has invalid data:`, colData);
+            return 0;
+        }
+        const rowCount = Object.keys(colData).length;
+        debugLog(`Column ${col} has ${rowCount} rows`);
+        return rowCount;
+    }));
     
     debugLog(`Columns: ${columns.length}, Max rows: ${maxRows}`);
+    
+    if (maxRows === 0) {
+        debugLog(`No rows found for ${type} table`);
+        return '<p>No rows available</p>';
+    }
 
     let tableHTML = '<table class="data-table"><thead><tr>';
     
@@ -204,7 +235,23 @@ function createDataTable(data, type) {
         tableHTML += `<td><strong>${i + 1}</strong></td>`;
         
         columns.forEach(column => {
-            const value = data[column][i] !== undefined ? data[column][i] : '';
+            const colData = data[column];
+            let value = '';
+            
+            if (colData && typeof colData === 'object') {
+                // Try to get value by index
+                value = colData[i] !== undefined ? colData[i] : '';
+                
+                // If that fails, try to get the last few values for tail
+                if (type === 'tail' && value === '') {
+                    const rowKeys = Object.keys(colData).map(Number).sort((a, b) => a - b);
+                    const lastIndex = rowKeys[rowKeys.length - 1];
+                    if (lastIndex !== undefined) {
+                        value = colData[lastIndex - (maxRows - 1 - i)] || '';
+                    }
+                }
+            }
+            
             // Handle different data types
             let displayValue = value;
             if (typeof value === 'number') {

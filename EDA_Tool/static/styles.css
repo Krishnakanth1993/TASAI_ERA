@@ -195,35 +195,39 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Upload Section - More Compact */
+/* Upload Section - Ultra Compact */
 .upload-section {
     text-align: center;
-    padding: 20px;  /* Reduced from 40px */
+    padding: 15px;  /* Further reduced */
 }
 
 .upload-section h2 {
-    font-size: 1.5rem;  /* Reduced from 2rem */
-    margin-bottom: 10px;  /* Reduced from 15px */
+    font-size: 1.3rem;  /* Further reduced */
+    margin-bottom: 8px;  /* Further reduced */
     color: var(--text-primary);
     font-weight: 700;
 }
 
 .upload-section p {
     color: var(--text-secondary);
-    margin-bottom: 20px;  /* Reduced from 30px */
-    font-size: 1rem;  /* Reduced from 1.1rem */
+    margin-bottom: 15px;  /* Further reduced */
+    font-size: 0.9rem;  /* Further reduced */
 }
 
 .upload-area {
-    border: 3px dashed var(--primary-color);
-    border-radius: 15px;  /* Reduced from 20px */
-    padding: 30px 20px;  /* Reduced from 60px 40px */
-    margin: 20px 0;  /* Reduced from 30px */
+    border: 2px dashed var(--primary-color);  /* Reduced border */
+    border-radius: 10px;  /* Reduced radius */
+    padding: 20px;  /* Much more compact */
+    margin: 15px 0;  /* Reduced margin */
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     background: var(--bg-card);
     position: relative;
     overflow: hidden;
+    display: flex;  /* Make it a single row */
+    align-items: center;  /* Center vertically */
+    justify-content: center;  /* Center horizontally */
+    gap: 15px;  /* Space between icon and text */
 }
 
 .upload-area::before {
@@ -251,26 +255,23 @@ body {
 }
 
 .upload-icon {
-    font-size: 2.5rem;  /* Reduced from 4rem */
+    font-size: 2rem;  /* Reduced icon size */
     color: var(--primary-color);
-    margin-bottom: 15px;  /* Reduced from 25px */
+    margin: 0;  /* Remove margin */
     position: relative;
     z-index: 2;
 }
 
 .upload-area h3 {
-    font-size: 1.2rem;  /* Reduced from 1.5rem */
-    margin-bottom: 10px;  /* Reduced from 15px */
+    font-size: 1rem;  /* Reduced text size */
+    margin: 0;  /* Remove margin */
     color: var(--text-primary);
     position: relative;
     z-index: 2;
 }
 
 .upload-area p {
-    color: var(--text-secondary);
-    position: relative;
-    z-index: 2;
-    font-size: 0.9rem;  /* Reduced from default */
+    display: none;  /* Hide the description text to save space */
 }
 
 .file-input {
