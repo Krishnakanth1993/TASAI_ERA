@@ -1104,7 +1104,7 @@ function displayChart(chartData) {
     }
 }
 
-// Preview report - Fixed to actually show the preview
+// Preview report - Enhanced to properly render charts
 function previewReport() {
     if (!currentData) {
         alert('Please upload data first');
@@ -1117,14 +1117,17 @@ function previewReport() {
     showChartSelectionInterface();
     
     const reportTitle = document.getElementById('reportTitle').value || 'Exploratory Data Analysis Report';
-    const reportDescription = document.getElementById('reportDescription').value || '';
+    const reportDescription = document.getElementById('chartDescription').value || '';
     
     const previewDiv = document.getElementById('reportPreview');
     previewDiv.style.display = 'block';
     
-    // Generate report HTML
-    const reportHTML = generateReportHTML(reportTitle, reportDescription);
+    // Generate report HTML with chart placeholders
+    const reportHTML = generateReportHTMLForPreview(reportTitle, reportDescription);
     previewDiv.innerHTML = reportHTML;
+    
+    // Now render all the charts properly in the report
+    renderChartsInReport();
     
     // Scroll to preview
     previewDiv.scrollIntoView({ behavior: 'smooth' });
@@ -1258,7 +1261,7 @@ function showChartLabeling(chartType, columns) {
     labelingSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Add chart to report - Fixed to prevent duplicates
+// Enhanced chart storage - Store chart configuration instead of raw data
 function addChartToReport() {
     const chartTitle = document.getElementById('chartTitle').value.trim();
     const chartDescription = document.getElementById('chartDescription').value.trim();
@@ -1282,16 +1285,18 @@ function addChartToReport() {
         return;
     }
     
-    // Create chart object
+    // Store the chart configuration for recreation
     const chartObj = {
-        id: Date.now(), // Unique ID
+        id: Date.now(),
         title: chartTitle,
         description: chartDescription,
         type: document.getElementById('chartType').value,
         columns: getSelectedColumns(),
         chartHTML: chartContainer.innerHTML,
+        // Store the original data that was used to create the chart
+        originalData: currentData,
         timestamp: new Date().toLocaleString(),
-        selected: true // Default to selected
+        selected: true
     };
     
     // Add to global array
@@ -1414,11 +1419,11 @@ function removeChartFromReport(chartId) {
     showNotification('Chart removed from report', 'info');
 }
 
-// Enhanced report generation with selected charts only
-function generateReportHTML(title, description) {
+// Enhanced report generation with chart placeholders
+function generateReportHTMLForPreview(title, description) {
     if (!currentData) return '<div class="alert alert-error">No data available</div>';
     
-    debugLog('Generating report HTML with title:', title);
+    debugLog('Generating preview report HTML with title:', title);
     debugLog('Available charts:', addedCharts);
     
     const dataInfo = currentData.data_info;
@@ -1510,14 +1515,418 @@ function generateReportHTML(title, description) {
         `;
     }
     
-    // Add only selected charts
+    // Add only selected charts - Use a Set to prevent duplicates
     const selectedCharts = addedCharts.filter(chart => chart.selected);
-    debugLog('Selected charts for report:', selectedCharts);
+    const uniqueChartIds = new Set();
+    const uniqueSelectedCharts = selectedCharts.filter(chart => {
+        if (uniqueChartIds.has(chart.id)) {
+            return false;
+        }
+        uniqueChartIds.add(chart.id);
+        return true;
+    });
     
-    if (selectedCharts.length > 0) {
+    debugLog('Selected charts for report:', uniqueSelectedCharts);
+    
+    if (uniqueSelectedCharts.length > 0) {
         html += `<h2>Selected Charts</h2>`;
         
-        selectedCharts.forEach(chart => {
+        uniqueSelectedCharts.forEach((chart, index) => {
+            html += `
+                <div class="report-chart-section">
+                    <h3>${chart.title}</h3>
+                    ${chart.description ? `<p><strong>Description:</strong> ${chart.description}</p>` : ''}
+                    <p><strong>Chart Type:</strong> ${chart.type} | <strong>Columns:</strong> ${chart.columns.join(', ')}</p>
+                    <div id="report-chart-${chart.id}" class="report-chart-container" style="height: 300px; width: 100%;"></div>
+                </div>
+            `;
+        });
+    } else {
+        html += '<p>No charts selected for this report. Use the chart selection interface above to choose charts!</p>';
+    }
+    
+    html += '</div>';
+    
+    debugLog('Preview report HTML generated successfully, length:', html.length);
+    return html;
+}
+
+// Preview report - Enhanced to properly render charts
+function previewReport() {
+    if (!currentData) {
+        alert('Please upload data first');
+        return;
+    }
+    
+    debugLog('Previewing report');
+    
+    // Show chart selection interface first
+    showChartSelectionInterface();
+    
+    const reportTitle = document.getElementById('reportTitle').value || 'Exploratory Data Analysis Report';
+    const reportDescription = document.getElementById('chartDescription').value || '';
+    
+    const previewDiv = document.getElementById('reportPreview');
+    previewDiv.style.display = 'block';
+    
+    // Generate report HTML with chart placeholders
+    const reportHTML = generateReportHTMLForPreview(reportTitle, reportDescription);
+    previewDiv.innerHTML = reportHTML;
+    
+    // Now render all the charts properly in the report
+    renderChartsInReport();
+    
+    // Scroll to preview
+    previewDiv.scrollIntoView({ behavior: 'smooth' });
+    
+    debugLog('Report preview generated and displayed');
+}
+
+// Render charts in the report preview - Fixed to prevent axis scaling errors
+function renderChartsInReport() {
+    const selectedCharts = addedCharts.filter(chart => chart.selected);
+    
+    selectedCharts.forEach(chart => {
+        const chartContainer = document.getElementById(`report-chart-${chart.id}`);
+        if (chartContainer) {
+            try {
+                // Recreate the chart using the original data and chart type
+                const chartData = recreateChartData(chart);
+                if (chartData) {
+                    // Create a new plot with proper sizing for the report
+                    const reportLayout = {
+                        ...chartData.layout,
+                        height: 300,
+                        width: undefined,
+                        autosize: true,
+                        margin: {
+                            l: 60,
+                            r: 40,
+                            t: 60,
+                            b: 60,
+                            pad: 4
+                        },
+                        font: { 
+                            color: '#f8fafc',
+                            size: 11
+                        },
+                        paper_bgcolor: '#1e293b',
+                        plot_bgcolor: '#1e293b',
+                        xaxis: { 
+                            gridcolor: '#334155', 
+                            color: '#cbd5e1',
+                            showgrid: true,
+                            zeroline: false
+                        },
+                        yaxis: { 
+                            gridcolor: '#334155', 
+                            color: '#cbd5e1',
+                            showgrid: true,
+                            zeroline: false
+                        }
+                    };
+                    
+                    Plotly.newPlot(chartContainer, chartData.data, reportLayout, {
+                        responsive: true,
+                        displayModeBar: false,
+                        staticPlot: false
+                    });
+                }
+            } catch (error) {
+                debugLog(`Error rendering chart ${chart.id}:`, error);
+                chartContainer.innerHTML = `<div class="alert alert-error">Error rendering chart: ${error.message}</div>`;
+            }
+        }
+    });
+}
+
+// Convert data structure to DataFrame format - Enhanced to use full data
+function convertDataToDataFrame(data) {
+    try {
+        // First try to use full data if available
+        if (data.full_data && data.full_data.length > 0) {
+            debugLog(`Using full data with ${data.full_data.length} rows`);
+            return data.full_data;
+        }
+        
+        // Fallback to preview data if full data not available
+        if (!data.preview_head) return [];
+        
+        const columns = data.data_info?.columns || [];
+        if (columns.length === 0) return [];
+        
+        // Convert from {column: {row_index: value}} to [{column1: value1, column2: value2, ...}]
+        const df = [];
+        const rowIndices = Object.keys(data.preview_head[columns[0]] || {});
+        
+        rowIndices.forEach(rowIndex => {
+            const row = {};
+            columns.forEach(col => {
+                if (data.preview_head[col] && data.preview_head[col][rowIndex] !== undefined) {
+                    row[col] = data.preview_head[col][rowIndex];
+                }
+            });
+            df.push(row);
+        });
+        
+        // Also add tail data if available
+        if (data.preview_tail) {
+            const tailRowIndices = Object.keys(data.preview_tail[columns[0]] || {});
+            tailRowIndices.forEach(rowIndex => {
+                const row = {};
+                columns.forEach(col => {
+                    if (data.preview_tail[col] && data.preview_tail[col][rowIndex] !== undefined) {
+                        row[col] = data.preview_tail[col][rowIndex];
+                    }
+                });
+                df.push(row);
+            });
+        }
+        
+        // Remove duplicates based on row content
+        const uniqueDf = [];
+        const seen = new Set();
+        
+        df.forEach(row => {
+            const rowKey = JSON.stringify(row);
+            if (!seen.has(rowKey)) {
+                seen.add(rowKey);
+                uniqueDf.push(row);
+            }
+        });
+        
+        debugLog(`DataFrame created with ${uniqueDf.length} unique rows from preview data`);
+        return uniqueDf;
+    } catch (error) {
+        debugLog('Error converting data:', error);
+        return [];
+    }
+}
+
+// Recreate chart data from stored information
+function recreateChartData(chart) {
+    try {
+        // Use the original data to recreate the chart
+        const data = chart.originalData;
+        const chartType = chart.type;
+        const columns = chart.columns;
+        
+        // Convert the data structure to a format suitable for plotting
+        const df = convertDataToDataFrame(data);
+        
+        if (!df || df.length === 0) {
+            debugLog('No data to plot for chart recreation');
+            return null;
+        }
+
+        let plotData = [];
+        let layout = {
+            title: chart.title,
+            font: { color: '#f8fafc' },
+            paper_bgcolor: '#1e293b',
+            plot_bgcolor: '#1e293b',
+            xaxis: { gridcolor: '#334155', color: '#cbd5e1' },
+            yaxis: { gridcolor: '#334155', color: '#cbd5e1' }
+        };
+
+        switch (chartType) {
+            case 'histogram':
+                plotData = [{
+                    x: df.map(row => row[columns[0]]),
+                    type: 'histogram',
+                    name: columns[0],
+                    marker: { color: '#f59e0b' },
+                    nbinsx: Math.min(30, Math.ceil(Math.sqrt(df.length)))
+                }];
+                layout.xaxis.title = columns[0];
+                layout.yaxis.title = 'Frequency';
+                break;
+
+            case 'boxplot':
+                plotData = [{
+                    y: df.map(row => row[columns[0]]),
+                    type: 'box',
+                    name: columns[0],
+                    marker: { color: '#f59e0b' }
+                }];
+                layout.yaxis.title = columns[0];
+                break;
+
+            case 'scatter':
+                plotData = [{
+                    x: df.map(row => row[columns[0]]),
+                    y: df.map(row => row[columns[1]]),
+                    type: 'scatter',
+                    mode: 'markers',
+                    name: `${columns[0]} vs ${columns[1]}`,
+                    marker: { 
+                        color: '#f59e0b', 
+                        size: Math.max(4, Math.min(8, 1000 / df.length)),
+                        opacity: 0.7
+                    }
+                }];
+                layout.xaxis.title = columns[0];
+                layout.yaxis.title = columns[1];
+                break;
+
+            case 'correlation':
+                const corrData = data.data_info?.correlation;
+                if (corrData) {
+                    const xLabels = Object.keys(corrData);
+                    const yLabels = Object.keys(corrData);
+                    const zValues = xLabels.map(x => yLabels.map(y => corrData[x][y]));
+                    
+                    plotData = [{
+                        z: zValues,
+                        x: xLabels,
+                        y: yLabels,
+                        type: 'heatmap',
+                        colorscale: 'RdBu',
+                        zmid: 0
+                    }];
+                }
+                break;
+
+            case 'bar':
+                const valueCounts = {};
+                df.forEach(row => {
+                    const value = row[columns[0]];
+                    if (value !== null && value !== undefined) {
+                        valueCounts[value] = (valueCounts[value] || 0) + 1;
+                    }
+                });
+                
+                plotData = [{
+                    x: Object.keys(valueCounts),
+                    y: Object.values(valueCounts),
+                    type: 'bar',
+                    marker: { color: '#f59e0b' }
+                }];
+                layout.xaxis.title = columns[0];
+                layout.yaxis.title = 'Count';
+                break;
+        }
+
+        return { data: plotData, layout: layout };
+    } catch (error) {
+        debugLog('Error recreating chart data:', error);
+        return null;
+    }
+}
+
+// Enhanced report generation with selected charts only - For final report generation
+function generateReportHTML(title, description) {
+    if (!currentData) return '<div class="alert alert-error">No data available</div>';
+    
+    debugLog('Generating final report HTML with title:', title);
+    debugLog('Available charts:', addedCharts);
+    
+    const dataInfo = currentData.data_info;
+    const timestamp = new Date().toLocaleString();
+    
+    let html = `
+        <div class="report-content">
+            <h1>${title}</h1>
+            <p><strong>Generated:</strong> ${timestamp}</p>
+            ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
+            
+            <h2>Dataset Overview</h2>
+            <p><strong>Shape:</strong> ${dataInfo.shape[0]} rows × ${dataInfo.shape[1]} columns</p>
+            <p><strong>Memory Usage:</strong> ${(dataInfo.memory_usage / 1024).toFixed(2)} KB</p>
+            <p><strong>Missing Values:</strong> ${Object.values(dataInfo.null_counts).reduce((sum, count) => sum + count, 0)}</p>
+            <p><strong>Duplicate Rows:</strong> ${dataInfo.duplicate_rows}</p>
+            
+            <h2>Data Types</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Data Type</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.dtypes).map(([col, dtype]) => 
+                        `<tr><td>${col}</td><td>${dtype}</td></tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+            
+            <h2>Missing Values Analysis</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Missing Count</th><th>Missing Percentage</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.null_counts).map(([col, count]) => {
+                        const percentage = ((count / dataInfo.shape[0]) * 100).toFixed(2);
+                        return `<tr><td>${col}</td><td>${count}</td><td>${percentage}%</td></tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+    `;
+    
+    // Add numerical analysis if available
+    if (dataInfo.numerical_analysis) {
+        html += `
+            <h2>Numerical Columns Analysis</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Mean</th><th>Median</th><th>Std</th><th>Min</th><th>Max</th><th>Skewness</th><th>Kurtosis</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.numerical_analysis).map(([col, stats]) => 
+                        `<tr>
+                            <td>${col}</td>
+                            <td>${stats.mean?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.median?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.std?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.min || 'N/A'}</td>
+                            <td>${stats.max || 'N/A'}</td>
+                            <td>${stats.skewness?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.kurtosis?.toFixed(3) || 'N/A'}</td>
+                        </tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Add correlation matrix if available
+    if (dataInfo.correlation) {
+        html += `
+            <h2>Correlation Matrix</h2>
+            <table>
+                <thead>
+                    <tr><th></th>${Object.keys(dataInfo.correlation).map(col => `<th>${col}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.correlation).map(([row, correlations]) => 
+                        `<tr>
+                            <td><strong>${row}</strong></td>
+                            ${Object.values(correlations).map(val => 
+                                `<td class="${getCorrelationClass(val)}">${val?.toFixed(3) || 'N/A'}</td>`
+                            ).join('')}
+                        </tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Add only selected charts - Use a Set to prevent duplicates
+    const selectedCharts = addedCharts.filter(chart => chart.selected);
+    const uniqueChartIds = new Set();
+    const uniqueSelectedCharts = selectedCharts.filter(chart => {
+        if (uniqueChartIds.has(chart.id)) {
+            return false;
+        }
+        uniqueChartIds.add(chart.id);
+        return true;
+    });
+    
+    debugLog('Selected charts for final report:', uniqueSelectedCharts);
+    
+    if (uniqueSelectedCharts.length > 0) {
+        html += `<h2>Selected Charts</h2>`;
+        
+        uniqueSelectedCharts.forEach(chart => {
             html += `
                 <div class="report-chart-section">
                     <h3>${chart.title}</h3>
@@ -1535,6 +1944,34 @@ function generateReportHTML(title, description) {
     
     html += '</div>';
     
-    debugLog('Report HTML generated successfully, length:', html.length);
+    debugLog('Final report HTML generated successfully, length:', html.length);
     return html;
+}
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-message">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Add to body
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+    
+    // Log to console for debugging
+    debugLog(`Notification (${type}): ${message}`);
 }

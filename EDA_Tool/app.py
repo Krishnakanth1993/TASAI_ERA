@@ -274,47 +274,62 @@ def index():
 def upload_file():
     try:
         if 'file' not in request.files:
-            return jsonify({'error': 'No file selected'}), 400
+            return jsonify({'error': 'No file uploaded'}), 400
         
         file = request.files['file']
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        if not allowed_file(file.filename):
-            return jsonify({'error': 'File type not supported. Please upload CSV or Excel files.'}), 400
-        
-        # Save file temporarily
-        filename = secure_filename(file.filename)
-        file_extension = filename.rsplit('.', 1)[1].lower()
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as tmp_file:
-            file.save(tmp_file.name)
-            tmp_path = tmp_file.name
-        
-        # Load data
-        df = load_data(tmp_path, file_extension)
-        
-        # Store data in session - convert to native Python types
-        session['data'] = convert_numpy_types(df.to_dict())
-        session['columns'] = list(df.columns)
-        session['shape'] = df.shape
-        
-        # Get data info
-        data_info = get_data_info(df)
-        
-        # Clean up temporary file
-        os.unlink(tmp_path)
-        
-        return jsonify({
-            'success': True,
-            'message': 'File uploaded successfully',
-            'data_info': data_info,
-            'preview_head': convert_numpy_types(df.head(10).to_dict()),
-            'preview_tail': convert_numpy_types(df.tail(10).to_dict())
-        })
-        
+        if file and allowed_file(file.filename):
+            # Read the file
+            if file.filename.endswith('.csv'):
+                df = pd.read_csv(file)
+            elif file.filename.endswith(('.xlsx', '.xls')):
+                df = pd.read_excel(file)
+            else:
+                return jsonify({'error': 'Unsupported file format'}), 400
+            
+            # Store the full DataFrame in session
+            session['data'] = df.to_dict('records')
+            session['full_data'] = df.to_dict('records')  # Store full data separately
+            
+            # Generate data info
+            data_info = get_data_info(df)
+            
+            # Generate preview data (head and tail) for display
+            preview_head = df.head(10).to_dict('records')
+            preview_tail = df.tail(10).to_dict('records')
+            
+            # Convert preview data to the expected format
+            preview_head_formatted = {}
+            preview_tail_formatted = {}
+            
+            for col in df.columns:
+                preview_head_formatted[col] = {}
+                preview_tail_formatted[col] = {}
+                
+                for i, row in enumerate(preview_head):
+                    preview_head_formatted[col][i] = row[col]
+                
+                for i, row in enumerate(preview_tail):
+                    preview_tail_formatted[col][i] = row[col]
+            
+            response_data = {
+                'success': True,
+                'message': 'File uploaded successfully',
+                'data_info': data_info,
+                'preview_head': preview_head_formatted,
+                'preview_tail': preview_tail_formatted,
+                'full_data': df.to_dict('records')  # Include full data in response
+            }
+            
+            return jsonify(response_data)
+        else:
+            return jsonify({'error': 'File type not allowed'}), 400
+            
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Upload error: {str(e)}")
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @app.route('/analyze', methods=['POST'])
 def analyze_data():
@@ -403,12 +418,7 @@ def visualize_data():
         if not chart_type:
             return jsonify({'error': 'Chart type not specified'}), 400
         
-        # Convert the full DataFrame to the format expected by frontend
-        full_data = {}
-        for col in df.columns:
-            full_data[col] = df[col].to_dict()
-        
-        # Create chart data based on type
+        # Create chart data based on type using FULL dataset
         if chart_type == 'histogram':
             plot_data = {
                 'x': df[columns[0]].tolist(),
