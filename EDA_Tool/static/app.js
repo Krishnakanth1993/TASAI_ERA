@@ -1104,7 +1104,7 @@ function displayChart(chartData) {
     }
 }
 
-// Preview report - Updated to show chart selection
+// Preview report - Fixed to actually show the preview
 function previewReport() {
     if (!currentData) {
         alert('Please upload data first');
@@ -1128,6 +1128,8 @@ function previewReport() {
     
     // Scroll to preview
     previewDiv.scrollIntoView({ behavior: 'smooth' });
+    
+    debugLog('Report preview generated and displayed');
 }
 
 // Generate report - Updated to use selected charts
@@ -1410,4 +1412,129 @@ function removeChartFromReport(chartId) {
     addedCharts = addedCharts.filter(chart => chart.id !== chartId);
     updateAddedChartsSummary();
     showNotification('Chart removed from report', 'info');
+}
+
+// Enhanced report generation with selected charts only
+function generateReportHTML(title, description) {
+    if (!currentData) return '<div class="alert alert-error">No data available</div>';
+    
+    debugLog('Generating report HTML with title:', title);
+    debugLog('Available charts:', addedCharts);
+    
+    const dataInfo = currentData.data_info;
+    const timestamp = new Date().toLocaleString();
+    
+    let html = `
+        <div class="report-content">
+            <h1>${title}</h1>
+            <p><strong>Generated:</strong> ${timestamp}</p>
+            ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
+            
+            <h2>Dataset Overview</h2>
+            <p><strong>Shape:</strong> ${dataInfo.shape[0]} rows × ${dataInfo.shape[1]} columns</p>
+            <p><strong>Memory Usage:</strong> ${(dataInfo.memory_usage / 1024).toFixed(2)} KB</p>
+            <p><strong>Missing Values:</strong> ${Object.values(dataInfo.null_counts).reduce((sum, count) => sum + count, 0)}</p>
+            <p><strong>Duplicate Rows:</strong> ${dataInfo.duplicate_rows}</p>
+            
+            <h2>Data Types</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Data Type</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.dtypes).map(([col, dtype]) => 
+                        `<tr><td>${col}</td><td>${dtype}</td></tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+            
+            <h2>Missing Values Analysis</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Missing Count</th><th>Missing Percentage</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.null_counts).map(([col, count]) => {
+                        const percentage = ((count / dataInfo.shape[0]) * 100).toFixed(2);
+                        return `<tr><td>${col}</td><td>${count}</td><td>${percentage}%</td></tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+    `;
+    
+    // Add numerical analysis if available
+    if (dataInfo.numerical_analysis) {
+        html += `
+            <h2>Numerical Columns Analysis</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Mean</th><th>Median</th><th>Std</th><th>Min</th><th>Max</th><th>Skewness</th><th>Kurtosis</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.numerical_analysis).map(([col, stats]) => 
+                        `<tr>
+                            <td>${col}</td>
+                            <td>${stats.mean?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.median?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.std?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.min || 'N/A'}</td>
+                            <td>${stats.max || 'N/A'}</td>
+                            <td>${stats.skewness?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.kurtosis?.toFixed(3) || 'N/A'}</td>
+                        </tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Add correlation matrix if available
+    if (dataInfo.correlation) {
+        html += `
+            <h2>Correlation Matrix</h2>
+            <table>
+                <thead>
+                    <tr><th></th>${Object.keys(dataInfo.correlation).map(col => `<th>${col}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.correlation).map(([row, correlations]) => 
+                        `<tr>
+                            <td><strong>${row}</strong></td>
+                            ${Object.values(correlations).map(val => 
+                                `<td class="${getCorrelationClass(val)}">${val?.toFixed(3) || 'N/A'}</td>`
+                            ).join('')}
+                        </tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Add only selected charts
+    const selectedCharts = addedCharts.filter(chart => chart.selected);
+    debugLog('Selected charts for report:', selectedCharts);
+    
+    if (selectedCharts.length > 0) {
+        html += `<h2>Selected Charts</h2>`;
+        
+        selectedCharts.forEach(chart => {
+            html += `
+                <div class="report-chart-section">
+                    <h3>${chart.title}</h3>
+                    ${chart.description ? `<p><strong>Description:</strong> ${chart.description}</p>` : ''}
+                    <p><strong>Chart Type:</strong> ${chart.type} | <strong>Columns:</strong> ${chart.columns.join(', ')}</p>
+                    <div class="report-chart-container">
+                        ${chart.chartHTML}
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        html += '<p>No charts selected for this report. Use the chart selection interface above to choose charts!</p>';
+    }
+    
+    html += '</div>';
+    
+    debugLog('Report HTML generated successfully, length:', html.length);
+    return html;
 }
