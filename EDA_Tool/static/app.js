@@ -2,6 +2,7 @@
 let currentData = null;
 let currentColumns = [];
 let currentDataView = 'head'; // Track current data view
+let addedCharts = []; // Store charts added to report
 
 // Debug function to log data
 function debugLog(message, data) {
@@ -133,6 +134,32 @@ function handleUploadSuccess(data) {
     
     // Update UI
     updateUploadStatus('Data loaded successfully!', 'success');
+    
+    // Auto-scroll to Data Review section
+    setTimeout(() => {
+        debugLog('Attempting to scroll to Data Review section');
+        
+        let targetElement = document.getElementById('dataPreview') || 
+                           document.querySelector('.tab-content.active') ||
+                           document.querySelector('[data-tab="dataPreview"]');
+        
+        if (targetElement) {
+            debugLog('Found target element, scrolling...', targetElement);
+            targetElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        } else {
+            debugLog('Target element not found, trying alternative approach');
+            const firstTabContent = document.querySelector('.tab-content');
+            if (firstTabContent) {
+                firstTabContent.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }
+    }, 1000);
     
     // Display data preview
     displayDataPreview(data);
@@ -978,7 +1005,7 @@ function getCorrelationClass(value) {
     return 'correlation-strong-neg';
 }
 
-// Create visualization - Use backend for full dataset
+// Create visualization - Enhanced with labeling
 function createVisualization() {
     const chartType = document.getElementById('chartType').value;
     if (!chartType) return;
@@ -1031,6 +1058,8 @@ function createVisualization() {
         
         if (data.success) {
             displayChart(data.chart_data);
+            // Show chart labeling section after chart is created
+            showChartLabeling(chartType, columns);
         } else {
             chartContainer.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
         }
@@ -1192,20 +1221,24 @@ function generateReportHTML(title, description, includeCharts) {
         `;
     }
     
-    // Add charts if requested
-    if (includeCharts !== 'none') {
-        html += `<h2>Generated Charts</h2>`;
+    // Add selected charts if requested
+    if (includeCharts !== 'none' && addedCharts.length > 0) {
+        html += `<h2>Selected Charts</h2>`;
         
-        // Check if there are any charts in the chart container
-        const chartContainer = document.getElementById('chartContainer');
-        if (chartContainer && chartContainer.style.display !== 'none') {
-            // Clone the chart for the report
-            const chartClone = chartContainer.cloneNode(true);
-            chartClone.style.height = '300px'; // Smaller size for report
-            html += chartClone.outerHTML;
-        } else {
-            html += '<p>No charts generated yet. Create some visualizations first!</p>';
-        }
+        addedCharts.forEach(chart => {
+            html += `
+                <div class="report-chart-section">
+                    <h3>${chart.title}</h3>
+                    ${chart.description ? `<p><strong>Description:</strong> ${chart.description}</p>` : ''}
+                    <p><strong>Chart Type:</strong> ${chart.type} | <strong>Columns:</strong> ${chart.columns.join(', ')}</p>
+                    <div class="report-chart-container">
+                        ${chart.chartHTML}
+                    </div>
+                </div>
+            `;
+        });
+    } else if (includeCharts !== 'none') {
+        html += '<p>No charts added to report yet. Use the "Add to Report" button in the Visualization tab!</p>';
     }
     
     html += '</div>';
@@ -1303,3 +1336,139 @@ function initApp() {
 
 // Run initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Show chart labeling section
+function showChartLabeling(chartType, columns) {
+    const labelingSection = document.getElementById('chartLabeling');
+    const chartTitle = document.getElementById('chartTitle');
+    const chartDescription = document.getElementById('chartDescription');
+    
+    // Generate default title based on chart type and columns
+    let defaultTitle = '';
+    switch (chartType) {
+        case 'histogram':
+            defaultTitle = `Distribution of ${columns[0]}`;
+            break;
+        case 'boxplot':
+            defaultTitle = `Box Plot of ${columns[0]}`;
+            break;
+        case 'scatter':
+            defaultTitle = `${columns[0]} vs ${columns[1]} Relationship`;
+            break;
+        case 'correlation':
+            defaultTitle = 'Correlation Heatmap';
+            break;
+        case 'bar':
+            defaultTitle = `Frequency of ${columns[0]}`;
+            break;
+    }
+    
+    chartTitle.value = defaultTitle;
+    chartDescription.value = '';
+    
+    labelingSection.style.display = 'grid';
+    
+    // Scroll to labeling section
+    labelingSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Add chart to report
+function addChartToReport() {
+    const chartTitle = document.getElementById('chartTitle').value.trim();
+    const chartDescription = document.getElementById('chartDescription').value.trim();
+    
+    if (!chartTitle) {
+        alert('Please enter a chart title');
+        return;
+    }
+    
+    // Get the current chart data
+    const chartContainer = document.getElementById('chartContainer');
+    if (chartContainer.style.display === 'none') {
+        alert('No chart available to add');
+        return;
+    }
+    
+    // Create chart object
+    const chartObj = {
+        id: Date.now(), // Unique ID
+        title: chartTitle,
+        description: chartDescription,
+        type: document.getElementById('chartType').value,
+        columns: getSelectedColumns(),
+        chartHTML: chartContainer.innerHTML,
+        timestamp: new Date().toLocaleString()
+    };
+    
+    // Add to global array
+    addedCharts.push(chartObj);
+    
+    // Update the summary
+    updateAddedChartsSummary();
+    
+    // Show success message
+    showNotification(`Chart "${chartTitle}" added to report!`, 'success');
+    
+    // Clear labeling section
+    clearChartLabeling();
+}
+
+// Get selected columns for current chart
+function getSelectedColumns() {
+    const chartType = document.getElementById('chartType').value;
+    let columns = [];
+    
+    if (chartType === 'histogram' || chartType === 'boxplot' || chartType === 'bar') {
+        const col1 = document.getElementById('chartColumn1');
+        if (col1) columns.push(col1.value);
+    } else if (chartType === 'scatter') {
+        const col1 = document.getElementById('chartColumn1');
+        const col2 = document.getElementById('chartColumn2');
+        if (col1 && col2) columns = [col1.value, col2.value];
+    }
+    
+    return columns;
+}
+
+// Clear chart labeling
+function clearChartLabeling() {
+    document.getElementById('chartLabeling').style.display = 'none';
+    document.getElementById('chartTitle').value = '';
+    document.getElementById('chartDescription').value = '';
+}
+
+// Update added charts summary
+function updateAddedChartsSummary() {
+    const summaryDiv = document.getElementById('addedChartsSummary');
+    const listDiv = document.getElementById('addedChartsList');
+    
+    if (addedCharts.length === 0) {
+        summaryDiv.style.display = 'none';
+        return;
+    }
+    
+    summaryDiv.style.display = 'block';
+    
+    listDiv.innerHTML = addedCharts.map(chart => `
+        <div class="added-chart-item">
+            <div class="added-chart-info">
+                <h4>${chart.title}</h4>
+                <p><strong>Type:</strong> ${chart.type} | <strong>Columns:</strong> ${chart.columns.join(', ')}</p>
+                ${chart.description ? `<p><strong>Description:</strong> ${chart.description}</p>` : ''}
+                <p><small>Added: ${chart.timestamp}</small></p>
+            </div>
+            <div class="added-chart-actions">
+                <button class="btn-remove" onclick="removeChartFromReport(${chart.id})">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Remove chart from report
+function removeChartFromReport(chartId) {
+    addedCharts = addedCharts.filter(chart => chart.id !== chartId);
+    updateAddedChartsSummary();
+    showNotification('Chart removed from report', 'info');
+}

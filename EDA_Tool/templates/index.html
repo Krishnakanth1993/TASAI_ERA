@@ -94,8 +94,6 @@
 
             <!-- Visualization Tab -->
             <div id="visualization" class="tab-content">
-                <!-- Removed the h2 heading "Create Visualizations" -->
-                
                 <div class="visualization-controls">
                     <div class="form-group">
                         <label for="chartType">Chart Type:</label>
@@ -118,7 +116,35 @@
                     </button>
                 </div>
 
+                <!-- Chart Labeling Section -->
+                <div id="chartLabeling" class="chart-labeling" style="display: none;">
+                    <div class="form-group">
+                        <label for="chartTitle">Chart Title:</label>
+                        <input type="text" id="chartTitle" class="form-control" placeholder="Enter a descriptive title for this chart">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="chartDescription">Chart Description (Optional):</label>
+                        <textarea id="chartDescription" class="form-control" rows="2" placeholder="Add any notes or insights about this chart"></textarea>
+                    </div>
+                    
+                    <div class="chart-actions">
+                        <button class="btn btn-success" onclick="addChartToReport()">
+                            <i class="fas fa-plus"></i> Add to Report
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearChartLabeling()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
                 <div id="chartContainer" class="chart-container" style="display: none;"></div>
+                
+                <!-- Added Charts Summary -->
+                <div id="addedChartsSummary" class="added-charts-summary" style="display: none;">
+                    <h3><i class="fas fa-list"></i> Charts Added to Report</h3>
+                    <div id="addedChartsList"></div>
+                </div>
             </div>
 
             <!-- Report Tab - Enhanced -->
