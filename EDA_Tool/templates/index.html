@@ -97,25 +97,29 @@
 
             <!-- Visualization Tab -->
             <div id="visualization" class="tab-content">
-                <h2>Create Visualizations</h2>
+                <!-- Removed the h2 heading "Create Visualizations" -->
                 
-                <div class="form-group">
-                    <label for="chartType">Chart Type:</label>
-                    <select id="chartType" class="form-control" onchange="updateColumnSelection()">
-                        <option value="">Select chart type</option>
-                        <option value="histogram">Histogram (1 column)</option>
-                        <option value="boxplot">Boxplot (1 column)</option>
-                        <option value="scatter">Scatter Plot (2 columns)</option>
-                        <option value="correlation">Correlation Heatmap</option>
-                        <option value="bar">Bar Chart (1 column)</option>
-                    </select>
+                <div class="visualization-controls">
+                    <div class="form-group">
+                        <label for="chartType">Chart Type:</label>
+                        <select id="chartType" class="form-control" onchange="updateColumnSelection()">
+                            <option value="">Select chart type</option>
+                            <option value="histogram">Histogram (1 column)</option>
+                            <option value="boxplot">Boxplot (1 column)</option>
+                            <option value="scatter">Scatter Plot (2 columns)</option>
+                            <option value="correlation">Correlation Heatmap</option>
+                            <option value="bar">Bar Chart (1 column)</option>
+                        </select>
+                    </div>
+
+                    <div id="columnSelection" style="display: none;">
+                        <!-- Column selections will be populated here -->
+                    </div>
+
+                    <button class="btn" onclick="createVisualization()" id="createChartBtn" disabled>
+                        <i class="fas fa-chart-line"></i> Create Chart
+                    </button>
                 </div>
-
-                <div id="columnSelection"></div>
-
-                <button class="btn" onclick="createVisualization()" id="createChartBtn" disabled>
-                    <i class="fas fa-chart-line"></i> Create Chart
-                </button>
 
                 <div id="chartContainer" class="chart-container" style="display: none;"></div>
             </div>

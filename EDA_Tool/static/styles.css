@@ -697,14 +697,57 @@ body {
     font-size: 1.1rem;
 }
 
-/* Chart Container */
+/* Chart Container - Further reduced height by 150px */
 .chart-container {
+    width: 100%;
+    height: 100px; /* Reduced from 250px to 100px */
+    margin: 20px 0;
+    padding: 20px;
     background: var(--bg-card);
     border-radius: 15px;
-    padding: 30px;
-    margin: 25px 0;
-    box-shadow: 0 10px 30px var(--shadow-color);
     border: 1px solid var(--border-color);
+    box-shadow: 0 8px 25px var(--shadow-color);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Plotly Chart Containment - Updated height */
+.chart-container .plotly-graph-div {
+    width: 100% !important;
+    height: 100% !important; /* Fixed height */
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Chart Container Responsive Breakpoints */
+@media (min-width: 768px) {
+    .chart-container {
+        min-height: 600px;
+    }
+    
+    .chart-container:has(div[class*="plotly"]) {
+        min-height: 700px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .chart-container {
+        min-height: 700px;
+    }
+    
+    .chart-container:has(div[class*="plotly"]) {
+        min-height: 800px;
+    }
+}
+
+@media (min-width: 1440px) {
+    .chart-container {
+        min-height: 800px;
+    }
+    
+    .chart-container:has(div[class*="plotly"]) {
+        min-height: 900px;
+    }
 }
 
 /* Report Preview */
@@ -1143,3 +1186,154 @@ body {
     margin-bottom: 8px;
     line-height: 1.4;
 }
+/* Visualization Section Enhancements */
+.visualization-section {
+    margin-bottom: 20px; /* Reduced from 30px */
+}
+
+/* Horizontal Form Layout - Equal Distribution */
+.visualization-controls {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr; /* Chart Type: Columns: Create Button */
+    align-items: end; /* Align items to bottom for proper alignment */
+    gap: 20px;
+    margin-bottom: 15px; /* Reduced from 20px */
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.form-control:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Column Selection Styling - Dynamic Widths */
+#columnSelection {
+    margin: 0; /* Remove margin for grid layout */
+    padding: 0; /* Remove padding for grid layout */
+    background: transparent; /* Remove background for grid layout */
+    border: none; /* Remove border for grid layout */
+    display: grid;
+    grid-template-columns: 1fr; /* Default: single column */
+    gap: 15px;
+    align-items: end;
+}
+
+/* Single column selection (histogram, boxplot, bar) */
+#columnSelection.single-column {
+    grid-template-columns: 1fr;
+}
+
+/* Two column selection (scatter) */
+#columnSelection.two-column {
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+}
+
+.column-selection-group {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.column-selection-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.column-selection-group select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+/* Chart Button Styling - Fixed width */
+#createChartBtn {
+    margin: 0;
+    padding: 10px 20px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    white-space: nowrap;
+    width: 100%; /* Full width of grid cell */
+}
+
+#createChartBtn:hover:not(:disabled) {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+#createChartBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .visualization-controls {
+        grid-template-columns: 1fr 1.5fr 1fr; /* Adjust ratio for medium screens */
+        gap: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .visualization-controls {
+        grid-template-columns: 1fr; /* Stack vertically on small screens */
+        gap: 15px;
+    }
+    
+    #columnSelection {
+        grid-template-columns: 1fr; /* Always single column on mobile */
+    }
+    
+    #createChartBtn {
+        align-self: stretch;
+    }
+}
+

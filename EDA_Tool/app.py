@@ -385,46 +385,136 @@ def analyze_data():
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 @app.route('/visualize', methods=['POST'])
-def create_visualization():
+def visualize_data():
     try:
         if 'data' not in session:
-            return jsonify({'error': 'No data uploaded'}), 400
+            return jsonify({'error': 'No data available for visualization'}), 400
         
-        data = request.get_json()
-        chart_type = data.get('chart_type')
-        columns = data.get('columns', [])
+        data = session['data']
+        df = pd.DataFrame(data)
         
-        # Reconstruct DataFrame from session
-        df = pd.DataFrame.from_dict(session['data'])
+        request_data = request.get_json()
+        chart_type = request_data.get('chart_type')
+        columns = request_data.get('columns', [])
         
+        print(f'Visualization request: {chart_type} with columns {columns}')
+        print(f'DataFrame shape: {df.shape}')
+        
+        if not chart_type:
+            return jsonify({'error': 'Chart type not specified'}), 400
+        
+        # Convert the full DataFrame to the format expected by frontend
+        full_data = {}
+        for col in df.columns:
+            full_data[col] = df[col].to_dict()
+        
+        # Create chart data based on type
         if chart_type == 'histogram':
-            if len(columns) != 1:
-                return jsonify({'error': 'Histogram requires exactly one column'}), 400
-            chart_data = create_histogram(df, columns[0])
+            plot_data = {
+                'x': df[columns[0]].tolist(),
+                'type': 'histogram',
+                'name': columns[0],
+                'marker': {'color': '#f59e0b'},
+                'nbinsx': min(30, int(np.sqrt(len(df))))
+            }
+            layout = {
+                'title': f'Histogram: {columns[0]} ({len(df)} data points)',
+                'xaxis': {'title': columns[0]},
+                'yaxis': {'title': 'Frequency'}
+            }
+            
         elif chart_type == 'boxplot':
-            if len(columns) != 1:
-                return jsonify({'error': 'Boxplot requires exactly one column'}), 400
-            chart_data = create_boxplot(df, columns[0])
+            plot_data = {
+                'y': df[columns[0]].tolist(),
+                'type': 'box',
+                'name': columns[0],
+                'marker': {'color': '#f59e0b'},
+                'boxpoints': 'outliers'
+            }
+            layout = {
+                'title': f'Box Plot: {columns[0]} ({len(df)} data points)',
+                'yaxis': {'title': columns[0]}
+            }
+            
         elif chart_type == 'scatter':
-            if len(columns) != 2:
-                return jsonify({'error': 'Scatter plot requires exactly two columns'}), 400
-            chart_data = create_scatter_plot(df, columns[0], columns[1])
+            plot_data = {
+                'x': df[columns[0]].tolist(),
+                'y': df[columns[1]].tolist(),
+                'type': 'scatter',
+                'mode': 'markers',
+                'name': f'{columns[0]} vs {columns[1]}',
+                'marker': {
+                    'color': '#f59e0b',
+                    'size': max(4, min(8, 1000 // len(df))),
+                    'opacity': 0.7
+                }
+            }
+            layout = {
+                'title': f'Scatter Plot: {columns[0]} vs {columns[1]} ({len(df)} points)',
+                'xaxis': {'title': columns[0]},
+                'yaxis': {'title': columns[1]}
+            }
+            
         elif chart_type == 'correlation':
-            chart_data = create_correlation_heatmap(df)
+            # Get correlation matrix from data_info if available
+            corr_matrix = df[df.select_dtypes(include=[np.number]).columns].corr()
+            x_labels = corr_matrix.columns.tolist()
+            y_labels = corr_matrix.columns.tolist()
+            z_values = corr_matrix.values.tolist()
+            
+            plot_data = {
+                'z': z_values,
+                'x': x_labels,
+                'y': y_labels,
+                'type': 'heatmap',
+                'colorscale': 'RdBu',
+                'zmid': 0
+            }
+            layout = {
+                'title': f'Correlation Heatmap ({len(df)} data points)'
+            }
+            
         elif chart_type == 'bar':
-            if len(columns) != 1:
-                return jsonify({'error': 'Bar chart requires exactly one column'}), 400
-            chart_data = create_bar_chart(df, columns[0])
-        else:
-            return jsonify({'error': 'Unsupported chart type'}), 400
+            # Count occurrences for categorical data
+            value_counts = df[columns[0]].value_counts().to_dict()
+            plot_data = {
+                'x': list(value_counts.keys()),
+                'y': list(value_counts.values()),
+                'type': 'bar',
+                'marker': {'color': '#f59e0b'}
+            }
+            layout = {
+                'title': f'Bar Chart: {columns[0]} ({len(df)} data points)',
+                'xaxis': {'title': columns[0]},
+                'yaxis': {'title': 'Count'}
+            }
+        
+        # Common layout properties
+        layout.update({
+            'font': {'color': '#f8fafc'},
+            'paper_bgcolor': '#1e293b',
+            'plot_bgcolor': '#1e293b',
+            'xaxis': layout.get('xaxis', {}),
+            'yaxis': layout.get('yaxis', {})
+        })
+        
+        # Update axis colors for all charts
+        if 'xaxis' in layout:
+            layout['xaxis'].update({'gridcolor': '#334155', 'color': '#cbd5e1'})
+        if 'yaxis' in layout:
+            layout['yaxis'].update({'gridcolor': '#334155', 'color': '#cbd5e1'})
         
         return jsonify({
             'success': True,
-            'chart_data': chart_data
+            'chart_data': {
+                'data': [plot_data],
+                'layout': layout
+            }
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Visualization error: {str(e)}")
+        return jsonify({'error': f'Visualization failed: {str(e)}'}), 500
 
 @app.route('/generate_report', methods=['POST'])
 def generate_report():

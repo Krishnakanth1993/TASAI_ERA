@@ -451,53 +451,76 @@ function updateColumnSelection() {
     const createChartBtn = document.getElementById('createChartBtn');
 
     debugLog('Updating column selection for chart type', chartType);
+    debugLog('Current data available:', currentData);
+    debugLog('Current columns available:', currentColumns);
 
     if (!chartType) {
         columnSelection.innerHTML = '';
+        columnSelection.style.display = 'none';
         createChartBtn.disabled = true;
         return;
     }
 
-    if (!currentColumns || currentColumns.length === 0) {
-        columnSelection.innerHTML = '<div class="alert alert-error">Please upload data first</div>';
-        createChartBtn.disabled = true;
-        return;
+    // Get columns from currentData if currentColumns is empty
+    let availableColumns = currentColumns;
+    if (!availableColumns || availableColumns.length === 0) {
+        if (currentData && currentData.data_info && currentData.data_info.columns) {
+            availableColumns = currentData.data_info.columns;
+            debugLog('Using columns from currentData:', availableColumns);
+        } else {
+            columnSelection.innerHTML = '<div class="alert alert-error">Please upload data first</div>';
+            createChartBtn.disabled = true;
+            return;
+        }
     }
+
+    debugLog('Available columns for selection:', availableColumns);
 
     let html = '';
+    let columnClass = 'single-column';
+    
     if (chartType === 'histogram' || chartType === 'boxplot' || chartType === 'bar') {
+        columnClass = 'single-column';
         html = `
-            <div class="form-group">
+            <div class="column-selection-group">
                 <label>Select Column:</label>
                 <select id="chartColumn1" class="form-control">
                     <option value="">Choose column</option>
-                    ${currentColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                    ${availableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
                 </select>
             </div>
         `;
     } else if (chartType === 'scatter') {
+        columnClass = 'two-column';
         html = `
-            <div class="form-group">
+            <div class="column-selection-group">
                 <label>X Column:</label>
                 <select id="chartColumn1" class="form-control">
                     <option value="">Choose X column</option>
-                    ${currentColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                    ${availableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
                 </select>
             </div>
-            <div class="form-group">
+            <div class="column-selection-group">
                 <label>Y Column:</label>
                 <select id="chartColumn2" class="form-control">
                     <option value="">Choose Y column</option>
-                    ${currentColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                    ${availableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
                 </select>
             </div>
         `;
     } else if (chartType === 'correlation') {
+        columnClass = 'single-column';
         html = '<div class="alert alert-info">Correlation heatmap will be generated for all numerical columns</div>';
     }
 
+    // Update the column selection with proper classes and layout
     columnSelection.innerHTML = html;
+    columnSelection.className = columnClass; // Apply the appropriate class
+    columnSelection.style.display = 'block';
     createChartBtn.disabled = false;
+    
+    debugLog('Column selection HTML generated:', html);
+    debugLog('Column selection class applied:', columnClass);
 }
 
 // Analyze data
@@ -955,10 +978,16 @@ function getCorrelationClass(value) {
     return 'correlation-strong-neg';
 }
 
-// Create visualization
+// Create visualization - Use backend for full dataset
 function createVisualization() {
     const chartType = document.getElementById('chartType').value;
     if (!chartType) return;
+
+    // Check if we have data
+    if (!currentData || !currentData.data_info) {
+        alert('Please upload data first');
+        return;
+    }
 
     let columns = [];
     if (chartType === 'histogram' || chartType === 'boxplot' || chartType === 'bar') {
@@ -978,8 +1007,14 @@ function createVisualization() {
         columns = [col1, col2];
     }
 
-    debugLog('Creating visualization', {chartType, columns});
+    debugLog('Creating visualization', {chartType, columns, currentData});
 
+    // Show loading state
+    const chartContainer = document.getElementById('chartContainer');
+    chartContainer.style.display = 'block';
+    chartContainer.innerHTML = '<div class="loading">Generating chart...</div>';
+
+    // Use backend for full dataset visualization
     fetch('/visualize', {
         method: 'POST',
         headers: {
@@ -997,27 +1032,45 @@ function createVisualization() {
         if (data.success) {
             displayChart(data.chart_data);
         } else {
-            alert(data.error);
+            chartContainer.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
         }
     })
     .catch(error => {
         debugLog('Visualization error', error);
-        alert('Visualization failed: ' + error.message);
+        chartContainer.innerHTML = `<div class="alert alert-error">Visualization failed: ${error.message}</div>`;
     });
 }
 
-// Display chart
+// Display chart - Updated for backend data
 function displayChart(chartData) {
-    debugLog('Displaying chart', chartData);
+    debugLog('Displaying chart from backend', chartData);
     
     const container = document.getElementById('chartContainer');
     container.style.display = 'block';
     
     try {
-        const parsedData = JSON.parse(chartData);
-        Plotly.newPlot(container, parsedData.data, parsedData.layout);
+        // chartData is already in the correct format from backend
+        Plotly.newPlot(container, chartData.data, chartData.layout, {
+            responsive: true,
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+            displaylogo: false,
+            toImageButtonOptions: {
+                format: 'png',
+                filename: 'eda_chart',
+                height: 400,
+                width: undefined,
+                scale: 2
+            }
+        });
+        
+        // Force a resize after plot creation
+        setTimeout(() => {
+            Plotly.Plots.resize(container);
+        }, 100);
+        
     } catch (error) {
-        debugLog('Chart parsing error', error);
+        debugLog('Chart display error:', error);
         container.innerHTML = '<div class="alert alert-error">Error displaying chart: ' + error.message + '</div>';
     }
 }
