@@ -84,6 +84,52 @@ function handleFileUpload(event) {
     });
 }
 
+// Handle successful data upload
+function handleUploadSuccess(data) {
+    debugLog('Upload successful', data);
+    
+    // Store data globally
+    currentData = data;
+    currentColumns = data.data_info?.columns || [];
+    
+    // Update UI
+    updateUploadStatus('Data loaded successfully!', 'success');
+    
+    // Auto-scroll to Data Review section with debugging
+    setTimeout(() => {
+        debugLog('Attempting to scroll to Data Review section');
+        
+        // Try multiple possible selectors
+        let targetElement = document.getElementById('dataPreview') || 
+                           document.querySelector('.tab-content.active') ||
+                           document.querySelector('[data-tab="dataPreview"]');
+        
+        if (targetElement) {
+            debugLog('Found target element, scrolling...', targetElement);
+            targetElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        } else {
+            debugLog('Target element not found, trying alternative approach');
+            // Alternative: scroll to the first tab content
+            const firstTabContent = document.querySelector('.tab-content');
+            if (firstTabContent) {
+                firstTabContent.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }
+    }, 1000); // Increased delay to ensure UI is fully rendered
+    
+    // Display data preview
+    displayDataPreview(data);
+    
+    // Enable other tabs
+    enableTabs();
+}
+
 // Display data preview
 function displayDataPreview(data) {
     debugLog('Displaying data preview', data);

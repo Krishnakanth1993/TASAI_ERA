@@ -68,16 +68,19 @@ body {
     padding: 20px;
 }
 
-/* Header Styles */
+/* Header Styles - Updated Layout with Same Line and Minimal Height */
 .header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 30px;
-    padding: 40px 20px;
+    padding: 15px 20px; /* Further reduced from 20px to 15px */
     background: var(--gradient-secondary);
     border-radius: 20px;
     box-shadow: 0 20px 40px var(--shadow-color);
     position: relative;
     overflow: hidden;
+    display: flex; /* Added flexbox for horizontal layout */
+    align-items: center; /* Center items vertically */
+    gap: 20px; /* Space between title and description */
 }
 
 .header::before {
@@ -93,24 +96,25 @@ body {
 }
 
 .header h1 {
-    font-size: 3rem;
-    margin-bottom: 15px;
-    text-shadow: 0 4px 8px var(--shadow-color);
+    font-size: 2.2rem; /* Further reduced from 2.5rem */
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0; /* Remove all margins */
+    text-shadow: 0 2px 4px var(--shadow-color);
     position: relative;
     z-index: 2;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 800;
+    white-space: nowrap; /* Prevent title from wrapping */
 }
 
 .header p {
-    font-size: 1.2rem;
-    opacity: 0.9;
+    font-size: 1rem; /* Further reduced from 1.1rem */
+    color: var(--text-secondary);
+    margin: 0;
+    text-align: left; /* Changed from center to left since they're on same line */
     position: relative;
     z-index: 2;
-    color: var(--text-secondary);
+    line-height: 1.2; /* Reduced line height */
+    flex: 1; /* Take remaining space */
 }
 
 /* Main Content */
