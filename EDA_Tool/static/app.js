@@ -1075,53 +1075,141 @@ function displayChart(chartData) {
     }
 }
 
-// Clean data
-function cleanData() {
-    const action = document.getElementById('cleaningAction').value;
-    if (!action) {
-        alert('Please select an action');
+// Preview report
+function previewReport() {
+    if (!currentData) {
+        alert('Please upload data first');
         return;
     }
+    
+    debugLog('Previewing report');
+    
+    const reportTitle = document.getElementById('reportTitle').value || 'Exploratory Data Analysis Report';
+    const reportDescription = document.getElementById('reportDescription').value || '';
+    const includeCharts = document.getElementById('includeCharts').value;
+    
+    const previewDiv = document.getElementById('reportPreview');
+    previewDiv.style.display = 'block';
+    
+    // Generate report HTML
+    const reportHTML = generateReportHTML(reportTitle, reportDescription, includeCharts);
+    previewDiv.innerHTML = reportHTML;
+    
+    // Scroll to preview
+    previewDiv.scrollIntoView({ behavior: 'smooth' });
+}
 
-    const columns = Array.from(document.getElementById('cleaningColumnSelect').selectedOptions).map(opt => opt.value);
-
-    debugLog('Cleaning data', {action, columns});
-
-    fetch('/clean_data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            action: action,
-            columns: columns
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        debugLog('Cleaning response', data);
-        
-        if (data.success) {
-            document.getElementById('cleaningStatus').innerHTML = 
-                `<div class="alert alert-success">${data.message}</div>`;
+// Generate report HTML
+function generateReportHTML(title, description, includeCharts) {
+    if (!currentData) return '<div class="alert alert-error">No data available</div>';
+    
+    const dataInfo = currentData.data_info;
+    const timestamp = new Date().toLocaleString();
+    
+    let html = `
+        <div class="report-content">
+            <h1>${title}</h1>
+            <p><strong>Generated:</strong> ${timestamp}</p>
+            ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
             
-            // Update current data info
-            if (data.data_info) {
-                currentData.data_info = data.data_info;
-                currentData.shape = data.data_info.shape;
-                currentColumns = data.data_info.columns;
-                updateColumnSelections();
-            }
+            <h2>Dataset Overview</h2>
+            <p><strong>Shape:</strong> ${dataInfo.shape[0]} rows × ${dataInfo.shape[1]} columns</p>
+            <p><strong>Memory Usage:</strong> ${(dataInfo.memory_usage / 1024).toFixed(2)} KB</p>
+            <p><strong>Missing Values:</strong> ${Object.values(dataInfo.null_counts).reduce((sum, count) => sum + count, 0)}</p>
+            <p><strong>Duplicate Rows:</strong> ${dataInfo.duplicate_rows}</p>
+            
+            <h2>Data Types</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Data Type</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.dtypes).map(([col, dtype]) => 
+                        `<tr><td>${col}</td><td>${dtype}</td></tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+            
+            <h2>Missing Values Analysis</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Missing Count</th><th>Missing Percentage</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.null_counts).map(([col, count]) => {
+                        const percentage = ((count / dataInfo.shape[0]) * 100).toFixed(2);
+                        return `<tr><td>${col}</td><td>${count}</td><td>${percentage}%</td></tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+    `;
+    
+    // Add numerical analysis if available
+    if (dataInfo.numerical_analysis) {
+        html += `
+            <h2>Numerical Columns Analysis</h2>
+            <table>
+                <thead>
+                    <tr><th>Column</th><th>Mean</th><th>Median</th><th>Std</th><th>Min</th><th>Max</th><th>Skewness</th><th>Kurtosis</th></tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.numerical_analysis).map(([col, stats]) => 
+                        `<tr>
+                            <td>${col}</td>
+                            <td>${stats.mean?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.median?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.std?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.min || 'N/A'}</td>
+                            <td>${stats.max || 'N/A'}</td>
+                            <td>${stats.skewness?.toFixed(3) || 'N/A'}</td>
+                            <td>${stats.kurtosis?.toFixed(3) || 'N/A'}</td>
+                        </tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Add correlation matrix if available
+    if (dataInfo.correlation) {
+        html += `
+            <h2>Correlation Matrix</h2>
+            <table>
+                <thead>
+                    <tr><th></th>${Object.keys(dataInfo.correlation).map(col => `<th>${col}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(dataInfo.correlation).map(([row, correlations]) => 
+                        `<tr>
+                            <td><strong>${row}</strong></td>
+                            ${Object.values(correlations).map(val => 
+                                `<td class="${getCorrelationClass(val)}">${val?.toFixed(3) || 'N/A'}</td>`
+                            ).join('')}
+                        </tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Add charts if requested
+    if (includeCharts !== 'none') {
+        html += `<h2>Generated Charts</h2>`;
+        
+        // Check if there are any charts in the chart container
+        const chartContainer = document.getElementById('chartContainer');
+        if (chartContainer && chartContainer.style.display !== 'none') {
+            // Clone the chart for the report
+            const chartClone = chartContainer.cloneNode(true);
+            chartClone.style.height = '300px'; // Smaller size for report
+            html += chartClone.outerHTML;
         } else {
-            document.getElementById('cleaningStatus').innerHTML = 
-                `<div class="alert alert-error">${data.error}</div>`;
+            html += '<p>No charts generated yet. Create some visualizations first!</p>';
         }
-    })
-    .catch(error => {
-        debugLog('Cleaning error', error);
-        document.getElementById('cleaningStatus').innerHTML = 
-            `<div class="alert alert-error">Cleaning failed: ${error.message}</div>`;
-    });
+    }
+    
+    html += '</div>';
+    return html;
 }
 
 // Generate report
@@ -1130,58 +1218,63 @@ function generateReport() {
         alert('Please upload data first');
         return;
     }
-
+    
     debugLog('Generating report');
-
+    
+    const reportTitle = document.getElementById('reportTitle').value || 'Exploratory Data Analysis Report';
+    const reportDescription = document.getElementById('reportDescription').value || '';
+    const includeCharts = document.getElementById('includeCharts').value;
+    const reportFormat = document.getElementById('reportFormat').value;
+    
+    // Show loading
     document.getElementById('reportLoading').style.display = 'block';
     document.getElementById('reportPreview').style.display = 'none';
-
-    fetch('/generate_report', {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('reportLoading').style.display = 'none';
-        
-        debugLog('Report response', data);
-        
-        if (data.success) {
-            document.getElementById('reportPreview').innerHTML = data.report_html;
-            document.getElementById('reportPreview').style.display = 'block';
-            document.getElementById('downloadBtn').style.display = 'inline-block';
-        } else {
-            alert(data.error);
-        }
-    })
-    .catch(error => {
-        debugLog('Report error', error);
-        document.getElementById('reportLoading').style.display = 'none';
-        alert('Report generation failed: ' + error.message);
-    });
+    
+    // Generate report HTML
+    const reportHTML = generateReportHTML(reportTitle, reportDescription, includeCharts);
+    
+    // Store report for download
+    window.currentReport = {
+        html: reportHTML,
+        title: reportTitle,
+        format: reportFormat
+    };
+    
+    // Hide loading and show download button
+    document.getElementById('reportLoading').style.display = 'none';
+    document.getElementById('downloadBtn').style.display = 'inline-block';
+    
+    // Show success message
+    showNotification('Report generated successfully! Click Download to save.', 'success');
 }
 
 // Download report
 function downloadReport() {
-    debugLog('Downloading report');
-
-    fetch('/download_report', {
-        method: 'POST'
-    })
-    .then(response => response.blob())
-    .then(blob => {
-        const url = window.URL.createObjectURL(blob);
+    if (!window.currentReport) {
+        alert('Please generate a report first');
+        return;
+    }
+    
+    const { html, title, format } = window.currentReport;
+    
+    if (format === 'html') {
+        // Download as HTML
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `eda_report_${new Date().toISOString().slice(0, 10)}.html`;
+        a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-    })
-    .catch(error => {
-        debugLog('Download error', error);
-        alert('Download failed: ' + error.message);
-    });
+        URL.revokeObjectURL(url);
+    } else if (format === 'pdf') {
+        // For PDF, we'll use html2pdf.js or similar library
+        // For now, show a message
+        alert('PDF generation requires additional libraries. Please use HTML format for now.');
+    }
+    
+    showNotification('Report downloaded successfully!', 'success');
 }
 
 // Initialize the application

@@ -27,9 +27,6 @@
                 <div class="tab" onclick="showTab('visualization')">
                     <i class="fas fa-chart-pie"></i> Visualization
                 </div>
-                <div class="tab" onclick="showTab('cleaning')">
-                    <i class="fas fa-broom"></i> Data Cleaning
-                </div>
                 <div class="tab" onclick="showTab('report')">
                     <i class="fas fa-file-alt"></i> Report
                 </div>
@@ -124,49 +121,55 @@
                 <div id="chartContainer" class="chart-container" style="display: none;"></div>
             </div>
 
-            <!-- Data Cleaning Tab -->
-            <div id="cleaning" class="tab-content">
-                <h2>Data Cleaning & Preprocessing</h2>
-                
-                <div class="form-group">
-                    <label for="cleaningAction">Action:</label>
-                    <select id="cleaningAction" class="form-control">
-                        <option value="">Select action</option>
-                        <option value="drop_missing">Drop rows with missing values</option>
-                        <option value="fill_missing_mean">Fill missing values with mean (numerical)</option>
-                        <option value="fill_missing_median">Fill missing values with median (numerical)</option>
-                        <option value="fill_missing_mode">Fill missing values with mode (categorical)</option>
-                        <option value="drop_duplicates">Remove duplicate rows</option>
-                        <option value="remove_outliers">Remove outliers (IQR method)</option>
-                    </select>
-                </div>
-
-                <div id="cleaningColumns" class="form-group" style="display: none;">
-                    <label for="cleaningColumnSelect">Select columns (optional, leave empty for all):</label>
-                    <select id="cleaningColumnSelect" class="form-control" multiple></select>
-                </div>
-
-                <button class="btn" onclick="cleanData()">
-                    <i class="fas fa-magic"></i> Apply Cleaning
-                </button>
-
-                <div id="cleaningStatus"></div>
-            </div>
-
-            <!-- Report Tab -->
+            <!-- Report Tab - Enhanced -->
             <div id="report" class="tab-content">
                 <h2>Generate EDA Report</h2>
                 <p>Create a comprehensive report with all your analysis results and visualizations.</p>
                 
-                <button class="btn" onclick="generateReport()">
-                    <i class="fas fa-file-alt"></i> Generate Report
-                </button>
+                <div class="report-controls">
+                    <div class="form-group">
+                        <label for="reportTitle">Report Title:</label>
+                        <input type="text" id="reportTitle" class="form-control" value="Exploratory Data Analysis Report" placeholder="Enter report title">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportDescription">Report Description:</label>
+                        <textarea id="reportDescription" class="form-control" rows="3" placeholder="Enter report description or notes"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="includeCharts">Include Charts:</label>
+                        <select id="includeCharts" class="form-control">
+                            <option value="all">All Generated Charts</option>
+                            <option value="selected">Selected Charts Only</option>
+                            <option value="none">No Charts</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportFormat">Report Format:</label>
+                        <select id="reportFormat" class="form-control">
+                            <option value="html">HTML Report</option>
+                            <option value="pdf">PDF Report</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="report-actions">
+                    <button class="btn btn-primary" onclick="previewReport()">
+                        <i class="fas fa-eye"></i> Preview Report
+                    </button>
+                    
+                    <button class="btn btn-success" onclick="generateReport()">
+                        <i class="fas fa-file-alt"></i> Generate Report
+                    </button>
+                    
+                    <button class="btn btn-download" onclick="downloadReport()" id="downloadBtn" style="display: none;">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                </div>
 
-                <button class="btn btn-success" onclick="downloadReport()" id="downloadBtn" style="display: none;">
-                    <i class="fas fa-download"></i> Download Report
-                </button>
-
-                <div id="reportLoading" class="loading">
+                <div id="reportLoading" class="loading" style="display: none;">
                     <div class="spinner"></div>
                     <p>Generating report...</p>
                 </div>
