@@ -763,7 +763,7 @@ function displayAnalysisResults(data) {
         `;
     }
     
-    // Outlier Analysis Section - Fixed with Real Calculations
+    // Outlier Analysis Section - Fixed with Real Calculations and Enhanced UI
     if (data.numerical_analysis) {
         html += `
             <div class="analysis-section">
@@ -838,7 +838,7 @@ function displayAnalysisResults(data) {
                         </tbody>
                     </table>
                 </div>
-                <div class="outlier-info">
+                <div class="outlier-legend">
                     <p><strong>Outlier Detection Method:</strong> IQR (Interquartile Range) Method</p>
                     <ul>
                         <li><strong>Lower Bound:</strong> Q1 - 1.5 × IQR</li>
