@@ -84,43 +84,41 @@
             <!-- Analysis Section -->
             <section id="analyze" class="section" style="display: none;">
                 <div class="section-header">
-                    <h2><i class="fas fa-chart-bar"></i> Statistical Analysis</h2>
-                    <p>Generate comprehensive statistics and insights</p>
+                    <h2><i class="fas fa-calculator"></i> Statistical Analysis</h2>
+                    <p>Analyze your data with various statistical methods</p>
                 </div>
 
                 <div class="analysis-controls">
                     <div class="control-group">
                         <label>Select Columns:</label>
-                        <div class="column-selector" id="columnSelector">
-                            <!-- Columns will be dynamically populated -->
+                        <div id="columnCheckboxes" class="checkbox-group">
+                            <!-- Checkboxes will be populated here -->
                         </div>
                     </div>
                     
-                    <div class="control-group">
-                        <label>Analysis Type:</label>
-                        <div class="analysis-options">
-                            <button class="btn btn-outline active" data-analysis="descriptive">
-                                <i class="fas fa-calculator"></i> Descriptive Stats
-                            </button>
-                            <button class="btn btn-outline" data-analysis="correlation">
-                                <i class="fas fa-link"></i> Correlation
-                            </button>
-                            <button class="btn btn-outline" data-analysis="outliers">
-                                <i class="fas fa-exclamation-triangle"></i> Outlier Detection
-                            </button>
-                            <button class="btn btn-outline" data-analysis="normality">
-                                <i class="fas fa-bell-curve"></i> Normality Tests
-                            </button>
-                        </div>
+                    <div class="analysis-options">
+                        <button class="btn btn-outline active" data-analysis="descriptive">
+                            <i class="fas fa-chart-bar"></i> Descriptive Stats
+                        </button>
+                        <button class="btn btn-outline" data-analysis="correlation">
+                            <i class="fas fa-link"></i> Correlation
+                        </button>
+                        <button class="btn btn-outline" data-analysis="outliers">
+                            <i class="fas fa-exclamation-triangle"></i> Outliers
+                        </button>
+                        <button class="btn btn-outline" data-analysis="normality">
+                            <i class="fas fa-bell-curve"></i> Normality
+                        </button>
                     </div>
-
-                    <button class="btn btn-primary btn-large" id="runAnalysisBtn">
-                        <i class="fas fa-rocket"></i> Run Analysis
+                    
+                    <!-- MAKE SURE THIS ID MATCHES -->
+                    <button class="btn btn-primary" id="analyzeBtn">
+                        <i class="fas fa-play"></i> Start Analysis
                     </button>
                 </div>
 
-                <div class="analysis-results" id="analysisResults">
-                    <!-- Results will be displayed here -->
+                <div id="analysisResults" class="analysis-results" style="display: none;">
+                    <!-- Analysis results will be displayed here -->
                 </div>
             </section>
 
