@@ -1703,13 +1703,15 @@ function convertDataToDataFrame(data) {
     }
 }
 
-// Recreate chart data from stored information
+// Recreate chart data from stored information - Fixed correlation handling
 function recreateChartData(chart) {
     try {
         // Use the original data to recreate the chart
         const data = chart.originalData;
         const chartType = chart.type;
         const columns = chart.columns;
+        
+        debugLog('Recreating chart:', { chartType, columns, data });
         
         // Convert the data structure to a format suitable for plotting
         const df = convertDataToDataFrame(data);
@@ -1770,11 +1772,32 @@ function recreateChartData(chart) {
                 break;
 
             case 'correlation':
-                const corrData = data.data_info?.correlation;
-                if (corrData) {
+                debugLog('Processing correlation chart...');
+                
+                // First try to use the stored correlation data
+                if (data.data_info && data.data_info.correlation) {
+                    debugLog('Found stored correlation data:', data.data_info.correlation);
+                    
+                    const corrData = data.data_info.correlation;
                     const xLabels = Object.keys(corrData);
                     const yLabels = Object.keys(corrData);
-                    const zValues = xLabels.map(x => yLabels.map(y => corrData[x][y]));
+                    
+                    debugLog('Correlation labels:', { xLabels, yLabels });
+                    
+                    // Convert correlation data to z-values matrix
+                    const zValues = [];
+                    for (let i = 0; i < xLabels.length; i++) {
+                        const row = [];
+                        for (let j = 0; j < yLabels.length; j++) {
+                            const xKey = xLabels[i];
+                            const yKey = yLabels[j];
+                            const value = corrData[xKey] && corrData[xKey][yKey];
+                            row.push(typeof value === 'number' ? value : 0);
+                        }
+                        zValues.push(row);
+                    }
+                    
+                    debugLog('Z-values matrix:', zValues);
                     
                     plotData = [{
                         z: zValues,
@@ -1782,8 +1805,95 @@ function recreateChartData(chart) {
                         y: yLabels,
                         type: 'heatmap',
                         colorscale: 'RdBu',
-                        zmid: 0
+                        zmid: 0,
+                        hovertemplate: '<b>%{x} vs %{y}</b><br>Correlation: %{z:.3f}<extra></extra>',
+                        showscale: true
                     }];
+                    
+                    layout.title = `Correlation Heatmap (${df.length} data points)`;
+                    layout.xaxis = { 
+                        title: 'Variables',
+                        gridcolor: '#334155', 
+                        color: '#cbd5e1',
+                        showgrid: false,
+                        side: 'bottom'
+                    };
+                    layout.yaxis = { 
+                        title: 'Variables',
+                        gridcolor: '#334155', 
+                        color: '#cbd5e1',
+                        showgrid: false,
+                        side: 'left'
+                    };
+                    
+                    debugLog('Correlation plot data created:', plotData);
+                    
+                } else {
+                    debugLog('No stored correlation data, calculating from DataFrame');
+                    
+                    // Fallback: calculate correlation from numerical columns
+                    const numericalCols = Object.keys(data.data_info?.dtypes || {}).filter(col => 
+                        ['int64', 'float64'].includes(data.data_info.dtypes[col])
+                    );
+                    
+                    debugLog('Numerical columns found:', numericalCols);
+                    
+                    if (numericalCols.length > 1) {
+                        // Create correlation matrix
+                        const corrMatrix = {};
+                        numericalCols.forEach(col1 => {
+                            corrMatrix[col1] = {};
+                            numericalCols.forEach(col2 => {
+                                if (col1 === col2) {
+                                    corrMatrix[col1][col2] = 1.0;
+                                } else {
+                                    // Calculate simple correlation
+                                    const values1 = df.map(row => parseFloat(row[col1])).filter(v => !isNaN(v));
+                                    const values2 = df.map(row => parseFloat(row[col2])).filter(v => !isNaN(v));
+                                    
+                                    if (values1.length > 0 && values2.length > 0) {
+                                        const correlation = calculateSimpleCorrelation(values1, values2);
+                                        corrMatrix[col1][col2] = correlation;
+                                    } else {
+                                        corrMatrix[col1][col2] = 0;
+                                    }
+                                }
+                            });
+                        });
+                        
+                        debugLog('Calculated correlation matrix:', corrMatrix);
+                        
+                        const xLabels = Object.keys(corrMatrix);
+                        const yLabels = Object.keys(corrMatrix);
+                        const zValues = xLabels.map(x => yLabels.map(y => corrMatrix[x][y]));
+                        
+                        plotData = [{
+                            z: zValues,
+                            x: xLabels,
+                            y: yLabels,
+                            type: 'heatmap',
+                            colorscale: 'RdBu',
+                            zmid: 0,
+                            hovertemplate: '<b>%{x} vs %{y}</b><br>Correlation: %{z:.3f}<extra></extra>',
+                            showscale: true
+                        }];
+                        
+                        layout.title = `Correlation Heatmap (${df.length} data points)`;
+                        layout.xaxis = { 
+                            title: 'Variables',
+                            gridcolor: '#334155', 
+                            color: '#cbd5e1',
+                            showgrid: false,
+                            side: 'bottom'
+                        };
+                        layout.yaxis = { 
+                            title: 'Variables',
+                            gridcolor: '#334155', 
+                            color: '#cbd5e1',
+                            showgrid: false,
+                            side: 'left'
+                        };
+                    }
                 }
                 break;
 
@@ -1807,10 +1917,37 @@ function recreateChartData(chart) {
                 break;
         }
 
+        debugLog('Final plot data:', plotData);
+        debugLog('Final layout:', layout);
+        
         return { data: plotData, layout: layout };
     } catch (error) {
         debugLog('Error recreating chart data:', error);
         return null;
+    }
+}
+
+// Helper function to calculate simple correlation
+function calculateSimpleCorrelation(x, y) {
+    try {
+        if (x.length !== y.length || x.length === 0) return 0;
+        
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+        const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+        const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+        
+        const numerator = n * sumXY - sumX * sumY;
+        const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        
+        if (denominator === 0) return 0;
+        
+        return numerator / denominator;
+    } catch (error) {
+        debugLog('Error calculating correlation:', error);
+        return 0;
     }
 }
 
