@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDA Report - {{ timestamp }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .report-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .report-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .report-section h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .report-section h3 {
+            color: #34495e;
+            margin: 20px 0 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        .info-card h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        .info-card p {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .correlation-high {
+            background: #d4edda;
+            font-weight: bold;
+        }
+        .correlation-medium {
+            background: #fff3cd;
+        }
+        .correlation-low {
+            background: #f8d7da;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1>🔍 Exploratory Data Analysis Report</h1>
+        <p>Generated on {{ timestamp }}</p>
+    </div>
+
+    <!-- Dataset Overview -->
+    <div class="report-section">
+        <h2>�� Dataset Overview</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>Total Rows</h4>
+                <p>{{ info.shape[0] }}</p>
+            </div>
+            <div class="info-card">
+                <h4>Total Columns</h4>
+                <p>{{ info.shape[1] }}</p>
+            </div>
+            <div class="info-card">
+                <h4>Memory Usage</h4>
+                <p>{{ "%.2f"|format(info.memory_usage / 1024 / 1024) }} MB</p>
+            </div>
+            <div class="info-card">
+                <h4>Duplicate Rows</h4>
+                <p>{{ info.duplicate_rows }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Types and Missing Values -->
+    <div class="report-section">
+        <h2>🔍 Data Structure Analysis</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Data Type</th>
+                    <th>Non-Null Count</th>
+                    <th>Null Count</th>
+                    <th>Null Percentage</th>
+                    <th>Unique Values</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for column in info.columns %}
+                <tr>
+                    <td><strong>{{ column }}</strong></td>
+                    <td>{{ info.dtypes[column] }}</td>
+                    <td>{{ info.shape[0] - info.null_counts[column] }}</td>
+                    <td>{{ info.null_counts[column] }}</td>
+                    <td>{{ "%.2f"|format(info.null_percentages[column]) }}%</td>
+                    <td>{{ info.unique_counts[column] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary Statistics -->
+    {% if summary_stats.numerical %}
+    <div class="report-section">
+        <h2>📈 Numerical Columns Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Mean</th>
+                    <th>Std</th>
+                    <th>Min</th>
+                    <th>25%</th>
+                    <th>50%</th>
+                    <th>75%</th>
+                    <th>Max</th>
+                    <th>Skewness</th>
+                    <th>Kurtosis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col in summary_stats.numerical.columns %}
+                {% set stats = summary_stats.numerical.descriptive[col] %}
+                {% set skew = summary_stats.numerical.skewness[col] %}
+                {% set kurt = summary_stats.numerical.kurtosis[col] %}
+                <tr>
+                    <td><strong>{{ col }}</strong></td>
+                    <td>{{ "%.4f"|format(stats.mean) if stats.mean else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(stats.std) if stats.std else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(stats.min) if stats.min else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(stats['25%']) if stats['25%'] else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(stats['50%']) if stats['50%'] else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(stats['75%']) if stats['75%'] else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(stats.max) if stats.max else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(skew) if skew else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(kurt) if kurt else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Categorical Analysis -->
+    {% if summary_stats.categorical %}
+    <div class="report-section">
+        <h2>📊 Categorical Columns Analysis</h2>
+        {% for col in summary_stats.categorical %}
+        <div style="margin-bottom: 30px;">
+            <h3>{{ col }}</h3>
+            <p><strong>Unique Values:</strong> {{ summary_stats.categorical[col].unique_count }}</p>
+            <p><strong>Most Common Value:</strong> {{ summary_stats.categorical[col].most_common or 'N/A' }}</p>
+            
+            {% if summary_stats.categorical[col].value_counts %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Value</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for value, count in summary_stats.categorical[col].value_counts.items() %}
+                    <tr>
+                        <td>{{ value }}</td>
+                        <td>{{ count }}</td>
+                        <td>{{ "%.2f"|format(count / info.shape[0] * 100) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Outlier Detection -->
+    {% if outliers %}
+    <div class="report-section">
+        <h2>🚨 Outlier Detection (IQR Method)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Outlier Count</th>
+                    <th>Lower Bound</th>
+                    <th>Upper Bound</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col, outlier in outliers.items() %}
+                <tr>
+                    <td><strong>{{ col }}</strong></td>
+                    <td>{{ outlier.count }}</td>
+                    <td>{{ "%.4f"|format(outlier.lower_bound) if outlier.lower_bound else 'N/A' }}</td>
+                    <td>{{ "%.4f"|format(outlier.upper_bound) if outlier.upper_bound else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Normality Tests -->
+    {% if normality_tests %}
+    <div class="report-section">
+        <h2>📏 Normality Tests (Shapiro-Wilk)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Statistic</th>
+                    <th>P-Value</th>
+                    <th>Is Normal?</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col, test in normality_tests.items() %}
+                {% if test.shapiro_wilk.error %}
+                <tr>
+                    <td><strong>{{ col }}</strong></td>
+                    <td colspan="3">Test failed</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td><strong>{{ col }}</strong></td>
+                    <td>{{ "%.4f"|format(test.shapiro_wilk.statistic) }}</td>
+                    <td>{{ "%.4f"|format(test.shapiro_wilk.p_value) }}</td>
+                    <td>{{ "✅ Normal" if test.shapiro_wilk.is_normal else "❌ Not Normal" }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        <p><em>Note: P-value > 0.05 indicates normal distribution</em></p>
+    </div>
+    {% endif %}
+
+    <!-- Correlation Analysis -->
+    {% if correlations %}
+    <div class="report-section">
+        <h2>🔗 Correlation Analysis (Pearson)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    {% for col in correlations.keys() %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row_col in correlations.keys() %}
+                <tr>
+                    <td><strong>{{ row_col }}</strong></td>
+                    {% for col_col in correlations.keys() %}
+                    {% set corr = correlations[row_col][col_col] %}
+                    {% if corr %}
+                        {% if corr > 0.7 %}
+                            <td class="correlation-high">{{ "%.3f"|format(corr) }}</td>
+                        {% elif corr < -0.7 %}
+                            <td class="correlation-high">{{ "%.3f"|format(corr) }}</td>
+                        {% elif corr > 0.5 or corr < -0.5 %}
+                            <td class="correlation-medium">{{ "%.3f"|format(corr) }}</td>
+                        {% else %}
+                            <td class="correlation-low">{{ "%.3f"|format(corr) }}</td>
+                        {% endif %}
+                    {% else %}
+                        <td>-</td>
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="margin-top: 20px;">
+            <p><strong>Correlation Interpretation:</strong></p>
+            <ul>
+                <li><span class="correlation-high">High correlation</span>: |r| > 0.7</li>
+                <li><span class="correlation-medium">Medium correlation</span>: 0.5 < |r| ≤ 0.7</li>
+                <li><span class="correlation-low">Low correlation</span>: |r| ≤ 0.5</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="timestamp">
+        Report generated on {{ timestamp }}
+    </div>
+</body>
+</html>

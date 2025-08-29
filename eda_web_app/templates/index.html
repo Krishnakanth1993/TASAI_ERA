@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDA Web App - Exploratory Data Analysis Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🔍 EDA Web App</h1>
+            <p>Exploratory Data Analysis Tool for Data Science Teams</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- File Upload Section -->
+            <section class="upload-section" id="uploadSection">
+                <h2>�� Data Ingestion</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📊</div>
+                        <h3>Upload Your Dataset</h3>
+                        <p>Support for CSV, Excel (.xlsx, .xls) files up to 100MB</p>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                            Choose File
+                        </button>
+                        <p class="file-info" id="fileInfo"></p>
+                    </div>
+                </div>
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p>Processing your file...</p>
+                </div>
+            </section>
+
+            <!-- Data Preview Section -->
+            <section class="preview-section" id="previewSection" style="display: none;">
+                <h2>�� Data Preview</h2>
+                <div class="data-info">
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h4>Dataset Shape</h4>
+                            <p id="datasetShape">-</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>Columns</h4>
+                            <p id="columnCount">-</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>Memory Usage</h4>
+                            <p id="memoryUsage">-</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>Missing Values</h4>
+                            <p id="missingValues">-</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-tabs">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="showTab('head')">First 10 Rows</button>
+                        <button class="tab-btn" onclick="showTab('tail')">Last 10 Rows</button>
+                        <button class="tab-btn" onclick="showTab('info')">Data Info</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div id="headTab" class="tab-pane active">
+                            <div class="table-container">
+                                <table id="headTable" class="data-table"></table>
+                            </div>
+                        </div>
+                        <div id="tailTab" class="tab-pane">
+                            <div class="table-container">
+                                <table id="tailTable" class="data-table"></table>
+                            </div>
+                        </div>
+                        <div id="infoTab" class="tab-pane">
+                            <div class="info-table" id="infoTable"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analysis Section -->
+            <section class="analysis-section" id="analysisSection" style="display: none;">
+                <h2>📊 Data Analysis</h2>
+                <div class="analysis-controls">
+                    <button class="btn btn-primary" onclick="runAnalysis()">
+                        🚀 Run Complete Analysis
+                    </button>
+                    <button class="btn btn-secondary" onclick="showDataCleaning()">
+                        🧹 Data Cleaning Options
+                    </button>
+                </div>
+                
+                <div class="analysis-results" id="analysisResults"></div>
+            </section>
+
+            <!-- Data Cleaning Section -->
+            <section class="cleaning-section" id="cleaningSection" style="display: none;">
+                <h2>🧹 Data Cleaning</h2>
+                <div class="cleaning-options">
+                    <div class="cleaning-card">
+                        <h4>Missing Values</h4>
+                        <button class="btn btn-warning" onclick="cleanData('drop_missing')">Drop Rows with Missing Values</button>
+                        <button class="btn btn-info" onclick="cleanData('fill_missing_mean')">Fill with Mean (Numerical)</button>
+                        <button class="btn btn-info" onclick="cleanData('fill_missing_median')">Fill with Median (Numerical)</button>
+                    </div>
+                    <div class="cleaning-card">
+                        <h4>Duplicates</h4>
+                        <button class="btn btn-warning" onclick="cleanData('drop_duplicates')">Remove Duplicate Rows</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Visualization Section -->
+            <section class="visualization-section" id="visualizationSection" style="display: none;">
+                <h2>�� Visualizations</h2>
+                <div class="chart-controls">
+                    <div class="control-group">
+                        <label for="chartType">Chart Type:</label>
+                        <select id="chartType" onchange="updateColumnSelection()">
+                            <option value="histogram">Histogram</option>
+                            <option value="boxplot">Box Plot</option>
+                            <option value="scatter">Scatter Plot</option>
+                            <option value="correlation_heatmap">Correlation Heatmap</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="columnSelection">Select Columns:</label>
+                        <select id="columnSelection" multiple></select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="createVisualization()">
+                        🎨 Generate Chart
+                    </button>
+                </div>
+                
+                <div class="chart-container" id="chartContainer"></div>
+            </section>
+
+            <!-- Report Section -->
+            <section class="report-section" id="reportSection" style="display: none;">
+                <h2>📄 EDA Report</h2>
+                <div class="report-controls">
+                    <button class="btn btn-primary" onclick="generateReport()">
+                        📊 Generate Complete Report
+                    </button>
+                    <button class="btn btn-secondary" onclick="previewReport()">
+                        👁️ Preview Report
+                    </button>
+                </div>
+                
+                <div class="report-preview" id="reportPreview"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Report Preview Modal -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>EDA Report Preview</h3>
+                <button class="close-btn" onclick="closeReportModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="reportModalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="downloadReport()">Download Report</button>
+                <button class="btn btn-secondary" onclick="closeReportModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
