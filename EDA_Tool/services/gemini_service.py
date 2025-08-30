@@ -50,6 +50,7 @@ class GeminiService:
     def _create_cleaning_prompt(self, data_stats: Dict[str, Any]) -> str:
         """Create a comprehensive prompt for data cleaning recommendations"""
         
+        # CUSTOMIZE YOUR LLM QUERY HERE
         prompt = f"""
 You are a data science expert specializing in data cleaning and preprocessing. 
 Analyze the following dataset statistics and provide specific, actionable recommendations for data cleaning.

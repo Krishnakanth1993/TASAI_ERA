@@ -15,30 +15,52 @@ import io
 import base64
 from datetime import datetime
 import warnings
+import sys
 
-# Import our new modules
-from config import Config
-from services.gemini_service import GeminiService
+# Add current directory to path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 warnings.filterwarnings('ignore')
 
+# Initialize Flask app first
 app = Flask(__name__)
-app.secret_key = Config.SECRET_KEY
-app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
-app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
+
+# Try to import config and services with fallback
+try:
+    from config import Config
+    print("✅ Config imported successfully")
+    
+    # Set Flask config
+    app.secret_key = Config.SECRET_KEY
+    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
+    app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
+    
+    # Try to initialize Gemini service
+    gemini_service = None
+    if Config.validate_config():
+        try:
+            from services.gemini_service import GeminiService
+            gemini_service = GeminiService()
+            print("✅ Gemini service initialized successfully")
+        except Exception as e:
+            print(f"⚠️  Failed to initialize Gemini service: {str(e)}")
+            gemini_service = None
+    else:
+        print("⚠️  Gemini API key not configured - LLM features disabled")
+        gemini_service = None
+        
+except ImportError as e:
+    print(f"⚠️  Import error: {e}")
+    print("Using fallback configuration")
+    
+    # Fallback configuration
+    app.secret_key = 'eda_tool_secret_key_2024'
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB limit
+    app.config['UPLOAD_FOLDER'] = 'temp_uploads'
+    gemini_service = None
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Initialize Gemini service if API key is available
-gemini_service = None
-if Config.validate_config():
-    try:
-        gemini_service = GeminiService()
-        print("Gemini service initialized successfully")
-    except Exception as e:
-        print(f"Failed to initialize Gemini service: {str(e)}")
-        gemini_service = None
 
 # Supported file extensions
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
@@ -58,6 +80,10 @@ def convert_numpy_types(obj):
         return obj.tolist()
     elif isinstance(obj, pd.DataFrame):
         return obj.to_dict()
+    elif isinstance(obj, np.bool_):  # Add this line for numpy booleans
+        return bool(obj)
+    elif isinstance(obj, bool):  # Add this line for regular booleans
+        return bool(obj)
     elif isinstance(obj, dict):
         return {key: convert_numpy_types(value) for key, value in obj.items()}
     elif isinstance(obj, list):
@@ -144,80 +170,108 @@ def get_categorical_stats(df):
     return convert_numpy_types(stats_dict)
 
 def detect_outliers(df, method='iqr'):
-    """Detect outliers using IQR or Z-score method"""
-    numerical_cols = df.select_dtypes(include=[np.number])
-    outliers = {}
-    
-    for col in numerical_cols.columns:
-        if method == 'iqr':
-            Q1 = df[col].quantile(0.25)
-            Q3 = df[col].quantile(0.75)
-            IQR = Q3 - Q1
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
-            outlier_indices = df[(df[col] < lower_bound) | (df[col] > upper_bound)].index.tolist()
-        else:  # z-score
-            z_scores = np.abs(stats.zscore(df[col].dropna()))
-            outlier_indices = df[z_scores > 3].index.tolist()
+    """Detect outliers using IQR method"""
+    try:
+        outliers = {}
+        numerical_cols = df.select_dtypes(include=[np.number]).columns
         
-        outliers[col] = {
-            'count': len(outlier_indices),
-            'indices': outlier_indices,
-            'values': df.loc[outlier_indices, col].tolist() if outlier_indices else []
-        }
-    
-    return convert_numpy_types(outliers)
+        for col in numerical_cols:
+            col_data = df[col].dropna()
+            if len(col_data) > 0:
+                Q1 = col_data.quantile(0.25)
+                Q3 = col_data.quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                
+                # Count outliers
+                outlier_mask = (col_data < lower_bound) | (col_data > upper_bound)
+                outlier_count = outlier_mask.sum()
+                
+                outliers[col] = {
+                    'count': int(outlier_count),
+                    'lower_bound': float(lower_bound),
+                    'upper_bound': float(upper_bound),
+                    'Q1': float(Q1),
+                    'Q3': float(Q3),
+                    'IQR': float(IQR)
+                }
+        
+        return outliers
+    except Exception as e:
+        print(f"Error in detect_outliers: {e}")
+        return {}
 
 def run_normality_tests(df):
-    """Run normality tests on numerical columns"""
-    numerical_cols = df.select_dtypes(include=[np.number])
-    normality_results = {}
-    
-    for col in numerical_cols.columns:
-        col_data = df[col].dropna()
-        if len(col_data) < 3:
-            continue
-            
-        try:
-            # Shapiro-Wilk test
-            shapiro_stat, shapiro_p = stats.shapiro(col_data)
-            
-            # Kolmogorov-Smirnov test
-            ks_stat, ks_p = stats.kstest(col_data, 'norm', args=(col_data.mean(), col_data.std()))
-            
-            normality_results[col] = {
-                'shapiro_wilk': {
-                    'statistic': shapiro_stat,
-                    'p_value': shapiro_p,
-                    'is_normal': shapiro_p > 0.05
-                },
-                'kolmogorov_smirnov': {
-                    'statistic': ks_stat,
-                    'p_value': ks_p,
-                    'is_normal': ks_p > 0.05
-                }
-            }
-        except Exception as e:
-            normality_results[col] = {'error': str(e)}
-    
-    return convert_numpy_types(normality_results)
+    """Run normality tests using skewness and kurtosis"""
+    try:
+        normality_results = {}
+        numerical_cols = df.select_dtypes(include=[np.number]).columns
+        
+        for col in numerical_cols:
+            col_data = df[col].dropna()
+            if len(col_data) > 0:
+                try:
+                    skewness = float(col_data.skew())
+                    kurtosis = float(col_data.kurtosis())
+                    
+                    normality_results[col] = {
+                        'skewness': skewness,
+                        'kurtosis': kurtosis
+                    }
+                except Exception as e:
+                    print(f"Error calculating normality for {col}: {e}")
+                    normality_results[col] = {
+                        'skewness': None,
+                        'kurtosis': None
+                    }
+        
+        return normality_results
+    except Exception as e:
+        print(f"Error in run_normality_tests: {e}")
+        return {}
 
 def get_correlations(df):
-    """Calculate correlations between numerical columns"""
-    numerical_cols = df.select_dtypes(include=[np.number])
-    if numerical_cols.empty or len(numerical_cols.columns) < 2:
+    """Get correlation matrix for numerical columns"""
+    try:
+        numerical_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numerical_cols) > 1:
+            corr_matrix = df[numerical_cols].corr()
+            # Convert to serializable format
+            correlations = {}
+            for i, col1 in enumerate(numerical_cols):
+                correlations[col1] = {}
+                for j, col2 in enumerate(numerical_cols):
+                    corr_val = corr_matrix.iloc[i, j]
+                    correlations[col1][col2] = float(corr_val) if not pd.isna(corr_val) else None
+            return correlations
+        else:
+            return {}
+    except Exception as e:
+        print(f"Error calculating correlations: {e}")
         return {}
-    
-    # Pearson correlation
-    pearson_corr = numerical_cols.corr(method='pearson')
-    
-    # Spearman correlation
-    spearman_corr = numerical_cols.corr(method='spearman')
-    
-    return convert_numpy_types({
-        'pearson': pearson_corr.to_dict(),
-        'spearman': spearman_corr.to_dict()
-    })
+
+def get_categorical_stats(df):
+    """Get statistics for categorical columns"""
+    try:
+        categorical_stats = {}
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+        
+        for col in categorical_cols:
+            col_data = df[col].dropna()
+            if len(col_data) > 0:
+                value_counts = col_data.value_counts()
+                categorical_stats[col] = {
+                    'unique_count': int(value_counts.nunique()),
+                    'most_common': value_counts.index[0] if len(value_counts) > 0 else None,
+                    'most_common_count': int(value_counts.iloc[0]) if len(value_counts) > 0 else 0,
+                    'total_count': int(len(col_data))
+                }
+        
+        return categorical_stats
+    except Exception as e:
+        print(f"Error in get_categorical_stats: {e}")
+        return {}
 
 def create_histogram(df, column, bins=30):
     """Create histogram for a numerical column"""
@@ -363,13 +417,16 @@ def analyze_data():
         analysis_results = {}
         
         # Basic statistics
-        analysis_results['basic_stats'] = df.describe().to_dict()
+        basic_stats = df.describe().to_dict()
+        # Convert numpy types to native Python types
+        analysis_results['basic_stats'] = convert_numpy_types(basic_stats)
         
         # Data types
         analysis_results['dtypes'] = {col: str(dtype) for col, dtype in df.dtypes.items()}
         
         # Missing values
-        analysis_results['missing_values'] = df.isnull().sum().to_dict()
+        missing_values = df.isnull().sum().to_dict()
+        analysis_results['missing_values'] = convert_numpy_types(missing_values)
         
         # Unique values for categorical columns
         categorical_cols = df.select_dtypes(include=['object', 'category']).columns
@@ -407,10 +464,30 @@ def analyze_data():
                     corr_val = corr_matrix.iloc[i, j]
                     analysis_results['correlation'][col1][col2] = float(corr_val) if not pd.isna(corr_val) else None
         
+        # Add missing analysis components with proper type conversion
+        try:
+            outliers = detect_outliers(df)
+            analysis_results['outliers'] = convert_numpy_types(outliers)
+        except Exception as e:
+            print(f"Error in outlier detection: {e}")
+            analysis_results['outliers'] = {}
+        
+        try:
+            normality_tests = run_normality_tests(df)
+            analysis_results['normality_tests'] = convert_numpy_types(normality_tests)
+        except Exception as e:
+            print(f"Error in normality tests: {e}")
+            analysis_results['normality_tests'] = {}
+        
+        # Ensure all values are JSON serializable
+        analysis_results = convert_numpy_types(analysis_results)
+        
         return jsonify(analysis_results)
         
     except Exception as e:
         print(f"Analysis error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 @app.route('/visualize', methods=['POST'])
@@ -684,47 +761,115 @@ def clean_data():
 def get_cleaning_recommendations():
     """Get LLM-based data cleaning recommendations"""
     try:
+        print("=== Starting cleaning recommendations request ===")
+        
+        # Check if data exists in session
         if 'data' not in session:
+            print("No data in session")
             return jsonify({'error': 'No data available for analysis'}), 400
         
+        # Check if Gemini service is available
         if not gemini_service:
-            return jsonify({'error': 'LLM service not available. Please check API configuration.'}), 503
+            print("Gemini service not available")
+            return jsonify({
+                'error': 'LLM service not available. Please check API configuration.',
+                'details': 'Make sure you have created a .env file with your GEMINI_API_KEY'
+            }), 503
         
-        # Get comprehensive data statistics
+        # Get data from session
         data = session['data']
         df = pd.DataFrame(data)
         
-        # Collect all available statistics
-        data_stats = {
-            'data_info': get_data_info(df),
-            'descriptive_stats': get_descriptive_stats(df),
-            'categorical_stats': get_categorical_stats(df),
-            'outliers': detect_outliers(df),
-            'normality_tests': run_normality_tests(df),
-            'correlations': get_correlations(df),
-            'missing_values': df.isnull().sum().to_dict(),
-            'data_types': {col: str(dtype) for col, dtype in df.dtypes.items()},
-            'shape': df.shape,
-            'memory_usage': df.memory_usage(deep=True).sum()
-        }
+        print(f"Data loaded successfully. Shape: {df.shape}")
         
-        # Get recommendations from Gemini
-        recommendations = gemini_service.get_cleaning_recommendations(data_stats)
+        # Collect statistics step by step with error handling
+        data_stats = {}
         
-        if recommendations:
-            # Store recommendations in session for reuse
-            session['cleaning_recommendations'] = recommendations
+        try:
+            print("Collecting data info...")
+            data_stats['data_info'] = get_data_info(df)
+            print("✓ Data info collected")
+        except Exception as e:
+            print(f"✗ Error collecting data info: {e}")
+            data_stats['data_info'] = {}
+        
+        try:
+            print("Collecting descriptive stats...")
+            data_stats['descriptive_stats'] = get_descriptive_stats(df)
+            print("✓ Descriptive stats collected")
+        except Exception as e:
+            print(f"✗ Error collecting descriptive stats: {e}")
+            data_stats['descriptive_stats'] = {}
+        
+        try:
+            print("Collecting categorical stats...")
+            data_stats['categorical_stats'] = get_categorical_stats(df)
+            print("✓ Categorical stats collected")
+        except Exception as e:
+            print(f"✗ Error collecting categorical stats: {e}")
+            data_stats['categorical_stats'] = {}
+        
+        try:
+            print("Detecting outliers...")
+            data_stats['outliers'] = detect_outliers(df)
+            print("✓ Outliers detected")
+        except Exception as e:
+            print(f"✗ Error detecting outliers: {e}")
+            data_stats['outliers'] = {}
+        
+        try:
+            print("Running normality tests...")
+            data_stats['normality_tests'] = run_normality_tests(df)
+            print("✓ Normality tests completed")
+        except Exception as e:
+            print(f"✗ Error running normality tests: {e}")
+            data_stats['normality_tests'] = {}
+        
+        try:
+            print("Calculating correlations...")
+            data_stats['correlations'] = get_correlations(df)
+            print("✓ Correlations calculated")
+        except Exception as e:
+            print(f"✗ Error calculating correlations: {e}")
+            data_stats['correlations'] = {}
+        
+        # Add basic stats
+        data_stats['missing_values'] = df.isnull().sum().to_dict()
+        data_stats['data_types'] = {col: str(dtype) for col, dtype in df.dtypes.items()}
+        data_stats['shape'] = df.shape
+        data_stats['memory_usage'] = df.memory_usage(deep=True).sum()
+        
+        print(f"All statistics collected. Total categories: {len(data_stats)}")
+        
+        # Call Gemini service
+        try:
+            print("Calling Gemini service...")
+            recommendations = gemini_service.get_cleaning_recommendations(data_stats)
             
-            return jsonify({
-                'success': True,
-                'recommendations': recommendations
-            })
-        else:
-            return jsonify({'error': 'Failed to generate cleaning recommendations'}), 500
+            if recommendations:
+                print("✓ Gemini recommendations received")
+                # Store in session
+                session['cleaning_recommendations'] = recommendations
+                
+                return jsonify({
+                    'success': True,
+                    'recommendations': recommendations
+                })
+            else:
+                print("✗ Gemini returned no recommendations")
+                return jsonify({'error': 'Failed to generate recommendations from Gemini'}), 500
+                
+        except Exception as gemini_error:
+            print(f"✗ Gemini service error: {gemini_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': f'Gemini API error: {str(gemini_error)}'}), 500
             
     except Exception as e:
-        print(f"Error getting cleaning recommendations: {str(e)}")
-        return jsonify({'error': f'Failed to get recommendations: {str(e)}'}), 500
+        print(f"✗ Unexpected error in get_cleaning_recommendations: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

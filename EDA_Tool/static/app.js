@@ -590,410 +590,271 @@ function analyzeData() {
 }
 
 // Start data analysis - with comprehensive debugging
-function startAnalysis() {
-    debugLog('=== STARTING ANALYSIS ===');
-    debugLog('Local currentData:', currentData);
-    debugLog('Global currentData:', window.currentData);
-    debugLog('SessionStorage data:', sessionStorage.getItem('currentData'));
-    
-    // Try to get data from multiple sources
-    let dataToAnalyze = null;
-    
-    if (currentData) {
-        dataToAnalyze = currentData;
-        debugLog('Using local currentData');
-    } else if (window.currentData) {
-        dataToAnalyze = window.currentData;
-        debugLog('Using global currentData');
-    } else {
-        const storedData = sessionStorage.getItem('currentData');
-        if (storedData) {
-            try {
-                dataToAnalyze = JSON.parse(storedData);
-                debugLog('Using sessionStorage data');
-            } catch (e) {
-                debugLog('Failed to parse sessionStorage data:', e);
-            }
-        }
-    }
-    
-    if (!dataToAnalyze) {
-        debugLog('NO DATA FOUND ANYWHERE!');
-        showNotification('No data available for analysis. Please upload a file first.', 'error');
-        return;
-    }
-    
-    debugLog('Final data to analyze:', dataToAnalyze);
-    debugLog('Data type:', typeof dataToAnalyze);
-    debugLog('Data keys:', Object.keys(dataToAnalyze));
+async function startAnalysis() {
+    try {
+        console.log('Starting analysis...');
     
     // Show loading state
-    const analysisContent = document.getElementById('analysisContent');
-    if (analysisContent) {
-        analysisContent.innerHTML = '<div class="loading">Analyzing data...</div>';
-    } else {
-        debugLog('analysisContent element not found!');
-        return;
-    }
-    
-    // Send analysis request
-    fetch('/analyze', {
+        document.getElementById('analysisContent').innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your dataset...</p>
+            </div>
+        `;
+        
+        const response = await fetch('/analyze', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            data: dataToAnalyze
-        })
-    })
-    .then(response => {
-        debugLog('Analysis response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        debugLog('Analysis response received:', data);
-        
-        if (data.error) {
-            showNotification(`Analysis failed: ${data.error}`, 'error');
-            if (analysisContent) {
-                analysisContent.innerHTML = `<div class="error">Analysis failed: ${data.error}</div>`;
+                'Content-Type': 'application/json'
             }
-        } else {
-            displayAnalysisResults(data);
-        }
-    })
-    .catch(error => {
-        debugLog('Analysis error:', error);
-        showNotification('Analysis failed. Please try again.', 'error');
-        if (analysisContent) {
-            analysisContent.innerHTML = `<div class="error">Analysis failed: ${error.message}</div>`;
-        }
-    });
-}
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            console.log('Analysis completed successfully');
 
 // Display analysis results
+            displayAnalysisResults(data);
+            
+            // Show the cleaning recommendations button AFTER analysis is complete
+            document.getElementById('cleaningRecommendationsBtn').style.display = 'inline-block';
+            
+            // Show success message
+            showNotification('Analysis completed successfully!', 'success');
+            
+        } else {
+            throw new Error(data.error || 'Analysis failed');
+        }
+        
+    } catch (error) {
+        console.error('Analysis error:', error);
+        document.getElementById('analysisContent').innerHTML = `
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                Analysis failed: ${error.message}
+            </div>
+        `;
+        
+        // Hide the button if analysis fails
+        document.getElementById('cleaningRecommendationsBtn').style.display = 'none';
+    }
+}
+
+// Function to display analysis results
 function displayAnalysisResults(data) {
-    debugLog('Displaying analysis results:', data);
-    
-    const analysisContent = document.getElementById('analysisContent');
+    const content = document.getElementById('analysisContent');
     
     let html = '<div class="analysis-results">';
+    html += '<h3><i class="fas fa-chart-bar"></i> Analysis Results</h3>';
     
-    // Basic Statistics Section - Tabular Format
+    // Basic statistics
     if (data.basic_stats) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-chart-bar"></i> Basic Statistics</h3>
-                <div class="table-container">
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                ${Object.keys(data.basic_stats).map(col => `<th>${col}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td><strong>Count</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].count}</td>`).join('')}</tr>
-                            <tr><td><strong>Mean</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].mean?.toFixed(3) || 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Std</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].std?.toFixed(3) || 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Min</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].min}</td>`).join('')}</tr>
-                            <tr><td><strong>25%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['25%']}</td>`).join('')}</tr>
-                            <tr><td><strong>50%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['50%']}</td>`).join('')}</tr>
-                            <tr><td><strong>75%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['75%']}</td>`).join('')}</tr>
-                            <tr><td><strong>Max</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].max}</td>`).join('')}</tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-calculator"></i> Basic Statistics</h4>';
+        html += '<div class="stats-table-container">';
+        html += '<table class="stats-table">';
+        html += '<thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead>';
+        html += '<tbody>';
+        
+        for (const [col, stats] of Object.entries(data.basic_stats)) {
+            if (typeof stats === 'object' && stats !== null) {
+                html += '<tr>';
+                html += `<td class="column-name"><i class="fas fa-columns"></i> ${col}</td>`;
+                html += `<td class="stat-value">${stats.count || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.mean ? stats.mean.toFixed(4) : 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.std ? stats.std.toFixed(4) : 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.min || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats['25%'] || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats['50%'] || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats['75%'] || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.max || 'N/A'}</td>`;
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table></div></div>';
     }
     
-    // Data Types Section - Tabular Format
-    if (data.dtypes) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-cogs"></i> Data Types</h3>
-                <div class="table-container">
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Column</th>
-                                <th>Data Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(data.dtypes).map(column => `
-                                <tr>
-                                    <td><strong>${column}</strong></td>
-                                    <td><span class="dtype-badge">${data.dtypes[column]}</span></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Missing Values Section - Tabular Format
+    // Missing values
     if (data.missing_values) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-exclamation-triangle"></i> Missing Values</h3>
-                <div class="table-container">
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Column</th>
-                                <th>Missing Count</th>
-                                <th>Missing Percentage</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(data.missing_values).map(column => {
-                                const missingCount = data.missing_values[column];
-                                const totalCount = data.basic_stats?.[column]?.count || 0;
-                                const missingPercentage = totalCount > 0 ? ((missingCount / totalCount) * 100).toFixed(2) : 0;
-                                const status = missingPercentage == 0 ? 'Perfect' : missingPercentage < 5 ? 'Good' : missingPercentage < 20 ? 'Warning' : 'Critical';
-                                const statusClass = status === 'Perfect' ? 'status-perfect' : status === 'Good' ? 'status-good' : status === 'Warning' ? 'status-warning' : 'status-critical';
-                                
-                                return `
-                                    <tr>
-                                        <td><strong>${column}</strong></td>
-                                        <td>${missingCount}</td>
-                                        <td>${missingPercentage}%</td>
-                                        <td><span class="status-badge ${statusClass}">${status}</span></td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-exclamation-triangle"></i> Missing Values</h4>';
+        html += '<div class="missing-values-container">';
+        
+        const hasMissingValues = Object.values(data.missing_values).some(count => count > 0);
+        
+        if (hasMissingValues) {
+            html += '<table class="missing-table">';
+            html += '<thead><tr><th>Column</th><th>Missing Count</th><th>Missing %</th><th>Status</th></tr></thead>';
+            html += '<tbody>';
+            
+        for (const [col, count] of Object.entries(data.missing_values)) {
+            if (count > 0) {
+                    const percentage = ((count / data.basic_stats[col]?.count) * 100).toFixed(2);
+                    const status = percentage > 20 ? 'high' : percentage > 5 ? 'medium' : 'low';
+                    html += `<tr class="missing-row ${status}">`;
+                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+                    html += `<td>${count}</td>`;
+                    html += `<td>${percentage}%</td>`;
+                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
+            html += '</tr>';
+        }
+            }
+            html += '</tbody></table>';
+        } else {
+            html += '<div class="no-missing-values">';
+            html += '<i class="fas fa-check-circle"></i>';
+            html += '<p>No missing values found in the dataset!</p>';
+    html += '</div>';
+        }
+        html += '</div></div>';
     }
     
-    // Correlation Matrix Section - Enhanced with Conditional Formatting
+    // Outlier Analysis
+    if (data.outliers) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-bullseye"></i> Outlier Analysis</h4>';
+        html += '<div class="outliers-container">';
+        
+        const hasOutliers = Object.values(data.outliers).some(outlier => outlier.count > 0);
+        
+        if (hasOutliers) {
+            html += '<table class="outliers-table">';
+            html += '<thead><tr><th>Column</th><th>Outlier Count</th><th>Lower Bound</th><th>Upper Bound</th><th>Status</th></tr></thead>';
+            html += '<tbody>';
+            
+            for (const [col, outlier] of Object.entries(data.outliers)) {
+                if (outlier.count > 0) {
+                    const percentage = ((outlier.count / data.basic_stats[col]?.count) * 100).toFixed(2);
+                    const status = percentage > 10 ? 'high' : percentage > 5 ? 'medium' : 'low';
+                    html += `<tr class="outlier-row ${status}">`;
+                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+                    html += `<td>${outlier.count} (${percentage}%)</td>`;
+                    html += `<td>${outlier.lower_bound ? outlier.lower_bound.toFixed(4) : 'N/A'}</td>`;
+                    html += `<td>${outlier.upper_bound ? outlier.upper_bound.toFixed(4) : 'N/A'}</td>`;
+                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
+                    html += '</tr>';
+                }
+            }
+            html += '</tbody></table>';
+                } else {
+            html += '<div class="no-outliers">';
+            html += '<i class="fas fa-check-circle"></i>';
+            html += '<p>No outliers detected using IQR method!</p>';
+    html += '</div>';
+        }
+        html += '</div></div>';
+    }
+    
+    // Normality Tests
+    if (data.normality_tests) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-chart-line"></i> Normality Tests</h4>';
+        html += '<div class="normality-container">';
+        html += '<table class="normality-table">';
+        html += '<thead><tr><th>Column</th><th>Skewness</th><th>Kurtosis</th><th>Normality</th><th>Assessment</th></tr></thead>';
+        html += '<tbody>';
+        
+        for (const [col, test] of Object.entries(data.normality_tests)) {
+            const skewness = test.skewness;
+            const kurtosis = test.kurtosis;
+            
+            // Determine normality
+            let normality, assessment, status;
+            if (Math.abs(skewness) <= 0.5 && Math.abs(kurtosis) <= 1) {
+                normality = 'Normal';
+                assessment = 'Data follows normal distribution';
+                status = 'normal';
+            } else if (Math.abs(skewness) <= 1 && Math.abs(kurtosis) <= 2) {
+                normality = 'Moderate';
+                assessment = 'Slight deviation from normal';
+                status = 'moderate';
+        } else {
+                normality = 'Non-Normal';
+                assessment = 'Significant deviation from normal';
+                status = 'non-normal';
+            }
+            
+            html += `<tr class="normality-row ${status}">`;
+            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+            html += `<td class="${Math.abs(skewness) > 1 ? 'highlight' : ''}">${skewness ? skewness.toFixed(4) : 'N/A'}</td>`;
+            html += `<td class="${Math.abs(kurtosis) > 2 ? 'highlight' : ''}">${kurtosis ? kurtosis.toFixed(4) : 'N/A'}</td>`;
+            html += `<td><span class="normality-badge ${status}">${normality}</span></td>`;
+            html += `<td>${assessment}</td>`;
+            html += '</tr>';
+        }
+        html += '</tbody></table></div></div>';
+    }
+    
+    // Correlation matrix
     if (data.correlation) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-project-diagram"></i> Correlation Matrix</h3>
-                <div class="table-container">
-                    <table class="correlation-table">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                ${Object.keys(data.correlation).map(col => `<th>${col}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(data.correlation).map(row => `
-                                <tr>
-                                    <td><strong>${row}</strong></td>
-                                    ${Object.keys(data.correlation[row]).map(col => {
-                                        const corrValue = data.correlation[row][col];
-                                        const cellClass = getCorrelationClass(corrValue);
-                                        const displayValue = corrValue !== null && corrValue !== undefined ? corrValue.toFixed(3) : 'N/A';
-                                        
-                                        return `<td class="${cellClass}">${displayValue}</td>`;
-                                    }).join('')}
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="correlation-legend">
-                    <span class="legend-item"><span class="legend-color perfect"></span> Perfect (1.0)</span>
-                    <span class="legend-item"><span class="legend-color strong"></span> Strong (≥0.7)</span>
-                    <span class="legend-item"><span class="legend-color moderate"></span> Moderate (≥0.3)</span>
-                    <span class="legend-item"><span class="legend-color weak"></span> Weak (≥0.0)</span>
-                    <span class="legend-item"><span class="legend-color weak-neg"></span> Weak Negative (≥-0.3)</span>
-                    <span class="legend-item"><span class="legend-color moderate-neg"></span> Moderate Negative (≥-0.7)</span>
-                    <span class="legend-item"><span class="legend-color strong-neg"></span> Strong Negative (<-0.7)</span>
-                </div>
-            </div>
-        `;
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-project-diagram"></i> Correlation Matrix</h4>';
+        html += '<div class="correlation-container">';
+        html += '<table class="correlation-table">';
+        html += '<thead><tr><th>Column</th>';
+        for (const col of Object.keys(data.correlation)) {
+            html += `<th>${col}</th>`;
+        }
+        html += '</tr></thead><tbody>';
+        
+        for (const [col1, correlations] of Object.entries(data.correlation)) {
+            html += '<tr>';
+            html += `<td class="column-header"><i class="fas fa-columns"></i> ${col1}</td>`;
+            for (const [col2, corr] of Object.entries(correlations)) {
+                if (col1 === col2) {
+                    html += '<td class="diagonal">1.000</td>';
+                } else {
+                    const corrValue = corr ? parseFloat(corr) : 0;
+                    let correlationClass = '';
+                    if (Math.abs(corrValue) >= 0.7) correlationClass = 'high-correlation';
+                    else if (Math.abs(corrValue) >= 0.3) correlationClass = 'medium-correlation';
+                    else correlationClass = 'low-correlation';
+                    
+                    html += `<td class="correlation-cell ${correlationClass}">${corrValue.toFixed(3)}</td>`;
+                }
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table></div></div>';
     }
     
-    // Outlier Analysis Section - Fixed with Real Calculations and Enhanced UI
-    if (data.numerical_analysis) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-bullseye"></i> Outlier Analysis</h3>
-                <div class="table-container">
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Column</th>
-                                <th>Q1</th>
-                                <th>Q3</th>
-                                <th>IQR</th>
-                                <th>Lower Bound</th>
-                                <th>Upper Bound</th>
-                                <th>Outlier Count</th>
-                                <th>Outlier %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(data.numerical_analysis).map(column => {
-                                const stats = data.basic_stats[column];
-                                const q1 = stats['25%'];
-                                const q3 = stats['75%'];
-                                const iqr = q3 - q1;
-                                const lowerBound = q1 - (1.5 * iqr);
-                                const upperBound = q3 + (1.5 * iqr);
-                                
-                                // Calculate actual outliers from the data
-                                let outlierCount = 0;
-                                if (data.preview_head && data.preview_head[column]) {
-                                    // Count outliers in the data
-                                    const columnData = data.preview_head[column];
-                                    Object.values(columnData).forEach(value => {
-                                        if (value !== null && value !== undefined) {
-                                            const numValue = parseFloat(value);
-                                            if (!isNaN(numValue) && (numValue < lowerBound || numValue > upperBound)) {
-                                                outlierCount++;
-                                            }
-                                        }
-                                    });
-                                }
-                                
-                                // Also check tail data if available
-                                if (data.preview_tail && data.preview_tail[column]) {
-                                    const columnData = data.preview_tail[column];
-                                    Object.values(columnData).forEach(value => {
-                                        if (value !== null && value !== undefined) {
-                                            const numValue = parseFloat(value);
-                                            if (!isNaN(numValue) && (numValue < lowerBound || numValue > upperBound)) {
-                                                outlierCount++;
-                                            }
-                                        }
-                                    });
-                                }
-                                
-                                const totalCount = stats.count;
-                                const outlierPercentage = totalCount > 0 ? ((outlierCount / totalCount) * 100).toFixed(2) : '0.00';
-                                
-                                return `
-                                    <tr>
-                                        <td><strong>${column}</strong></td>
-                                        <td>${q1?.toFixed(3) || 'N/A'}</td>
-                                        <td>${q3?.toFixed(3) || 'N/A'}</td>
-                                        <td>${iqr?.toFixed(3) || 'N/A'}</td>
-                                        <td>${lowerBound?.toFixed(3) || 'N/A'}</td>
-                                        <td>${upperBound?.toFixed(3) || 'N/A'}</td>
-                                        <td>${outlierCount}</td>
-                                        <td>${outlierPercentage}%</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="outlier-legend">
-                    <p><strong>Outlier Detection Method:</strong> IQR (Interquartile Range) Method</p>
-                    <ul>
-                        <li><strong>Lower Bound:</strong> Q1 - 1.5 × IQR</li>
-                        <li><strong>Upper Bound:</strong> Q3 + 1.5 × IQR</li>
-                        <li><strong>Outliers:</strong> Values outside these bounds</li>
-                    </ul>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Normality Tests Section - New
-    if (data.numerical_analysis) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-bell-curve"></i> Normality Tests</h3>
-                <div class="table-container">
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Column</th>
-                                <th>Skewness</th>
-                                <th>Kurtosis</th>
-                                <th>Normality Assessment</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(data.numerical_analysis).map(column => {
-                                const analysis = data.numerical_analysis[column];
-                                const skewness = analysis.skewness;
-                                const kurtosis = analysis.kurtosis;
-                                
-                                // Normality assessment based on skewness and kurtosis
-                                let normalityAssessment = 'Normal';
-                                let assessmentClass = 'assessment-normal';
-                                
-                                if (Math.abs(skewness) > 1 || Math.abs(kurtosis) > 2) {
-                                    normalityAssessment = 'Non-Normal';
-                                    assessmentClass = 'assessment-non-normal';
-                                } else if (Math.abs(skewness) > 0.5 || Math.abs(kurtosis) > 1) {
-                                    normalityAssessment = 'Moderately Skewed';
-                                    assessmentClass = 'assessment-moderate';
-                                }
-                                
-                                return `
-                                    <tr>
-                                        <td><strong>${column}</strong></td>
-                                        <td>${skewness?.toFixed(3) || 'N/A'}</td>
-                                        <td>${kurtosis?.toFixed(3) || 'N/A'}</td>
-                                        <td><span class="assessment-badge ${assessmentClass}">${normalityAssessment}</span></td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="normality-legend">
-                    <p><strong>Normality Assessment Guide:</strong></p>
-                    <ul>
-                        <li><strong>Normal:</strong> |Skewness| ≤ 0.5 and |Kurtosis| ≤ 1</li>
-                        <li><strong>Moderately Skewed:</strong> |Skewness| > 0.5 or |Kurtosis| > 1</li>
-                        <li><strong>Non-Normal:</strong> |Skewness| > 1 or |Kurtosis| > 2</li>
-                    </ul>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Unique Values Section - Enhanced
-    if (data.unique_values) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-tags"></i> Unique Values</h3>
-                <div class="unique-values-grid">
-                    ${Object.keys(data.unique_values).map(column => {
-                        const uniqueVals = data.unique_values[column];
-                        const totalCount = data.basic_stats?.[column]?.count || 0;
-                        const uniqueCount = uniqueVals.length;
-                        const cardinality = totalCount > 0 ? (uniqueCount / totalCount * 100).toFixed(2) : 0;
-                        
-                        return `
-                            <div class="unique-value-item">
-                                <h4>${column}</h4>
-                                <div class="unique-stats">
-                                    <span class="stat-item">Total: ${totalCount}</span>
-                                    <span class="stat-item">Unique: ${uniqueCount}</span>
-                                    <span class="stat-item">Cardinality: ${cardinality}%</span>
-                                </div>
-                                <div class="unique-values-list">
-                                    ${uniqueVals.map(val => `<span class="unique-value">${val}</span>`).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        `;
+    // Data types
+    if (data.dtypes) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-tags"></i> Data Types</h4>';
+        html += '<div class="dtypes-container">';
+        html += '<table class="dtypes-table">';
+        html += '<thead><tr><th>Column</th><th>Data Type</th><th>Category</th></tr></thead>';
+        html += '<tbody>';
+        
+        for (const [col, dtype] of Object.entries(data.dtypes)) {
+            let category, icon;
+            if (dtype.includes('int') || dtype.includes('float')) {
+                category = 'Numerical';
+                icon = 'fas fa-hashtag';
+            } else if (dtype.includes('object') || dtype.includes('category')) {
+                category = 'Categorical';
+                icon = 'fas fa-list';
+            } else if (dtype.includes('datetime')) {
+                category = 'DateTime';
+                icon = 'fas fa-calendar';
+            } else {
+                category = 'Other';
+                icon = 'fas fa-question';
+            }
+            
+            html += '<tr>';
+            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+            html += `<td><code>${dtype}</code></td>`;
+            html += `<td><i class="${icon}"></i> ${category}</td>`;
+            html += '</tr>';
+        }
+        html += '</tbody></table></div></div>';
     }
     
     html += '</div>';
-    
-    analysisContent.innerHTML = html;
+    content.innerHTML = html;
 }
 
 // Enhanced correlation class function
@@ -2090,12 +1951,12 @@ function generateReportHTML(title, description) {
 
 // Show notification function
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.innerHTML = `
         <div class="notification-content">
-            <span class="notification-message">${message}</span>
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            <span>${message}</span>
             <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
                 <i class="fas fa-times"></i>
             </button>
@@ -2111,14 +1972,13 @@ function showNotification(message, type = 'info') {
             notification.remove();
         }
     }, 5000);
-    
-    // Log to console for debugging
-    debugLog(`Notification (${type}): ${message}`);
 }
 
-// Function to get cleaning recommendations
+// Function to get cleaning recommendations - Add async keyword
 async function getCleaningRecommendations() {
     try {
+        console.log('Getting cleaning recommendations...');
+        
         // Show modal
         document.getElementById('cleaningModal').style.display = 'block';
         
@@ -2128,11 +1988,13 @@ async function getCleaningRecommendations() {
         
         // Check if we already have recommendations
         if (cleaningRecommendations) {
+            console.log('Using cached recommendations');
             displayCleaningRecommendations(cleaningRecommendations);
             return;
         }
         
         // Make API call to get recommendations
+        console.log('Calling /get_cleaning_recommendations endpoint...');
         const response = await fetch('/get_cleaning_recommendations', {
             method: 'POST',
             headers: {
@@ -2140,7 +2002,14 @@ async function getCleaningRecommendations() {
             }
         });
         
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('Response data:', data);
         
         if (data.success) {
             cleaningRecommendations = data.recommendations;
@@ -2151,12 +2020,24 @@ async function getCleaningRecommendations() {
         
     } catch (error) {
         console.error('Error getting cleaning recommendations:', error);
-        document.getElementById('cleaningContent').innerHTML = `
-            <div class="alert alert-error">
-                <i class="fas fa-exclamation-triangle"></i>
-                Failed to get cleaning recommendations: ${error.message}
-            </div>
-        `;
+        
+        // Hide loading and show error
+        const loadingElement = document.getElementById('cleaningLoading');
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+        
+        const contentElement = document.getElementById('cleaningContent');
+        if (contentElement) {
+            contentElement.innerHTML = `
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Failed to get cleaning recommendations: ${error.message}
+                    <br><br>
+                    <small>Make sure you have run the analysis first and have a valid Gemini API key configured.</small>
+                </div>
+            `;
+        }
     }
 }
 
@@ -2271,17 +2152,269 @@ function exportRecommendations() {
 // Update the startAnalysis function to show the cleaning recommendations button
 async function startAnalysis() {
     try {
-        // ... existing analysis code ...
+        console.log('Starting analysis...');
         
-        // After successful analysis, show the cleaning recommendations button
-        document.getElementById('cleaningRecommendationsBtn').style.display = 'inline-block';
+        // Show loading state
+        document.getElementById('analysisContent').innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your dataset...</p>
+            </div>
+        `;
         
-        // ... rest of existing code ...
+        const response = await fetch('/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            console.log('Analysis completed successfully');
+            
+            // Display analysis results
+            displayAnalysisResults(data);
+            
+            // Show the cleaning recommendations button AFTER analysis is complete
+            document.getElementById('cleaningRecommendationsBtn').style.display = 'inline-block';
+            
+            // Show success message
+            showNotification('Analysis completed successfully!', 'success');
+            
+        } else {
+            throw new Error(data.error || 'Analysis failed');
+        }
         
     } catch (error) {
         console.error('Analysis error:', error);
-        // ... existing error handling ...
+        document.getElementById('analysisContent').innerHTML = `
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                Analysis failed: ${error.message}
+            </div>
+        `;
+        
+        // Hide the button if analysis fails
+        document.getElementById('cleaningRecommendationsBtn').style.display = 'none';
     }
+}
+
+// Function to display analysis results
+function displayAnalysisResults(data) {
+    const content = document.getElementById('analysisContent');
+    
+    let html = '<div class="analysis-results">';
+    html += '<h3><i class="fas fa-chart-bar"></i> Analysis Results</h3>';
+    
+    // Basic statistics
+    if (data.basic_stats) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-calculator"></i> Basic Statistics</h4>';
+        html += '<div class="stats-table-container">';
+        html += '<table class="stats-table">';
+        html += '<thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead>';
+        html += '<tbody>';
+        
+        for (const [col, stats] of Object.entries(data.basic_stats)) {
+            if (typeof stats === 'object' && stats !== null) {
+                html += '<tr>';
+                html += `<td class="column-name"><i class="fas fa-columns"></i> ${col}</td>`;
+                html += `<td class="stat-value">${stats.count || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.mean ? stats.mean.toFixed(4) : 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.std ? stats.std.toFixed(4) : 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.min || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats['25%'] || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats['50%'] || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats['75%'] || 'N/A'}</td>`;
+                html += `<td class="stat-value">${stats.max || 'N/A'}</td>`;
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table></div></div>';
+    }
+    
+    // Missing values
+    if (data.missing_values) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-exclamation-triangle"></i> Missing Values</h4>';
+        html += '<div class="missing-values-container">';
+        
+        const hasMissingValues = Object.values(data.missing_values).some(count => count > 0);
+        
+        if (hasMissingValues) {
+            html += '<table class="missing-table">';
+            html += '<thead><tr><th>Column</th><th>Missing Count</th><th>Missing %</th><th>Status</th></tr></thead>';
+            html += '<tbody>';
+            
+            for (const [col, count] of Object.entries(data.missing_values)) {
+                if (count > 0) {
+                    const percentage = ((count / data.basic_stats[col]?.count) * 100).toFixed(2);
+                    const status = percentage > 20 ? 'high' : percentage > 5 ? 'medium' : 'low';
+                    html += `<tr class="missing-row ${status}">`;
+                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+                    html += `<td>${count}</td>`;
+                    html += `<td>${percentage}%</td>`;
+                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
+                    html += '</tr>';
+                }
+            }
+            html += '</tbody></table>';
+        } else {
+            html += '<div class="no-missing-values">';
+            html += '<i class="fas fa-check-circle"></i>';
+            html += '<p>No missing values found in the dataset!</p>';
+            html += '</div>';
+        }
+        html += '</div></div>';
+    }
+    
+    // Outlier Analysis
+    if (data.outliers) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-bullseye"></i> Outlier Analysis</h4>';
+        html += '<div class="outliers-container">';
+        
+        const hasOutliers = Object.values(data.outliers).some(outlier => outlier.count > 0);
+        
+        if (hasOutliers) {
+            html += '<table class="outliers-table">';
+            html += '<thead><tr><th>Column</th><th>Outlier Count</th><th>Lower Bound</th><th>Upper Bound</th><th>Status</th></tr></thead>';
+            html += '<tbody>';
+            
+            for (const [col, outlier] of Object.entries(data.outliers)) {
+                if (outlier.count > 0) {
+                    const percentage = ((outlier.count / data.basic_stats[col]?.count) * 100).toFixed(2);
+                    const status = percentage > 10 ? 'high' : percentage > 5 ? 'medium' : 'low';
+                    html += `<tr class="outlier-row ${status}">`;
+                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+                    html += `<td>${outlier.count} (${percentage}%)</td>`;
+                    html += `<td>${outlier.lower_bound ? outlier.lower_bound.toFixed(4) : 'N/A'}</td>`;
+                    html += `<td>${outlier.upper_bound ? outlier.upper_bound.toFixed(4) : 'N/A'}</td>`;
+                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
+                    html += '</tr>';
+                }
+            }
+            html += '</tbody></table>';
+        } else {
+            html += '<div class="no-outliers">';
+            html += '<i class="fas fa-check-circle"></i>';
+            html += '<p>No outliers detected using IQR method!</p>';
+            html += '</div>';
+        }
+        html += '</div></div>';
+    }
+    
+    // Normality Tests
+    if (data.normality_tests) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-chart-line"></i> Normality Tests</h4>';
+        html += '<div class="normality-container">';
+        html += '<table class="normality-table">';
+        html += '<thead><tr><th>Column</th><th>Skewness</th><th>Kurtosis</th><th>Normality</th><th>Assessment</th></tr></thead>';
+        html += '<tbody>';
+        
+        for (const [col, test] of Object.entries(data.normality_tests)) {
+            const skewness = test.skewness;
+            const kurtosis = test.kurtosis;
+            
+            // Determine normality
+            let normality, assessment, status;
+            if (Math.abs(skewness) <= 0.5 && Math.abs(kurtosis) <= 1) {
+                normality = 'Normal';
+                assessment = 'Data follows normal distribution';
+                status = 'normal';
+            } else if (Math.abs(skewness) <= 1 && Math.abs(kurtosis) <= 2) {
+                normality = 'Moderate';
+                assessment = 'Slight deviation from normal';
+                status = 'moderate';
+            } else {
+                normality = 'Non-Normal';
+                assessment = 'Significant deviation from normal';
+                status = 'non-normal';
+            }
+            
+            html += `<tr class="normality-row ${status}">`;
+            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+            html += `<td class="${Math.abs(skewness) > 1 ? 'highlight' : ''}">${skewness ? skewness.toFixed(4) : 'N/A'}</td>`;
+            html += `<td class="${Math.abs(kurtosis) > 2 ? 'highlight' : ''}">${kurtosis ? kurtosis.toFixed(4) : 'N/A'}</td>`;
+            html += `<td><span class="normality-badge ${status}">${normality}</span></td>`;
+            html += `<td>${assessment}</td>`;
+            html += '</tr>';
+        }
+        html += '</tbody></table></div></div>';
+    }
+    
+    // Correlation matrix
+    if (data.correlation) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-project-diagram"></i> Correlation Matrix</h4>';
+        html += '<div class="correlation-container">';
+        html += '<table class="correlation-table">';
+        html += '<thead><tr><th>Column</th>';
+        for (const col of Object.keys(data.correlation)) {
+            html += `<th>${col}</th>`;
+        }
+        html += '</tr></thead><tbody>';
+        
+        for (const [col1, correlations] of Object.entries(data.correlation)) {
+            html += '<tr>';
+            html += `<td class="column-header"><i class="fas fa-columns"></i> ${col1}</td>`;
+            for (const [col2, corr] of Object.entries(correlations)) {
+                if (col1 === col2) {
+                    html += '<td class="diagonal">1.000</td>';
+                } else {
+                    const corrValue = corr ? parseFloat(corr) : 0;
+                    let correlationClass = '';
+                    if (Math.abs(corrValue) >= 0.7) correlationClass = 'high-correlation';
+                    else if (Math.abs(corrValue) >= 0.3) correlationClass = 'medium-correlation';
+                    else correlationClass = 'low-correlation';
+                    
+                    html += `<td class="correlation-cell ${correlationClass}">${corrValue.toFixed(3)}</td>`;
+                }
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table></div></div>';
+    }
+    
+    // Data types
+    if (data.dtypes) {
+        html += '<div class="analysis-section">';
+        html += '<h4><i class="fas fa-tags"></i> Data Types</h4>';
+        html += '<div class="dtypes-container">';
+        html += '<table class="dtypes-table">';
+        html += '<thead><tr><th>Column</th><th>Data Type</th><th>Category</th></tr></thead>';
+        html += '<tbody>';
+        
+        for (const [col, dtype] of Object.entries(data.dtypes)) {
+            let category, icon;
+            if (dtype.includes('int') || dtype.includes('float')) {
+                category = 'Numerical';
+                icon = 'fas fa-hashtag';
+            } else if (dtype.includes('object') || dtype.includes('category')) {
+                category = 'Categorical';
+                icon = 'fas fa-list';
+            } else if (dtype.includes('datetime')) {
+                category = 'DateTime';
+                icon = 'fas fa-calendar';
+            } else {
+                category = 'Other';
+                icon = 'fas fa-question';
+            }
+            
+            html += '<tr>';
+            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
+            html += `<td><code>${dtype}</code></td>`;
+            html += `<td><i class="${icon}"></i> ${category}</td>`;
+            html += '</tr>';
+        }
+        html += '</tbody></table></div></div>';
+    }
+    
+    html += '</div>';
+    content.innerHTML = html;
 }
 
 // Close modal when clicking outside
