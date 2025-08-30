@@ -4,6 +4,9 @@ let currentColumns = [];
 let currentDataView = 'head'; // Track current data view
 let addedCharts = []; // Store charts added to report
 
+// Global variables for cleaning recommendations
+let cleaningRecommendations = null;
+
 // Debug function to log data
 function debugLog(message, data) {
     console.log(`[EDA Debug] ${message}:`, data);
@@ -2111,4 +2114,180 @@ function showNotification(message, type = 'info') {
     
     // Log to console for debugging
     debugLog(`Notification (${type}): ${message}`);
+}
+
+// Function to get cleaning recommendations
+async function getCleaningRecommendations() {
+    try {
+        // Show modal
+        document.getElementById('cleaningModal').style.display = 'block';
+        
+        // Show loading state
+        document.getElementById('cleaningLoading').style.display = 'block';
+        document.getElementById('cleaningRecommendations').style.display = 'none';
+        
+        // Check if we already have recommendations
+        if (cleaningRecommendations) {
+            displayCleaningRecommendations(cleaningRecommendations);
+            return;
+        }
+        
+        // Make API call to get recommendations
+        const response = await fetch('/get_cleaning_recommendations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cleaningRecommendations = data.recommendations;
+            displayCleaningRecommendations(cleaningRecommendations);
+        } else {
+            throw new Error(data.error || 'Failed to get recommendations');
+        }
+        
+    } catch (error) {
+        console.error('Error getting cleaning recommendations:', error);
+        document.getElementById('cleaningContent').innerHTML = `
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                Failed to get cleaning recommendations: ${error.message}
+            </div>
+        `;
+    }
+}
+
+// Function to display cleaning recommendations
+function displayCleaningRecommendations(recommendations) {
+    const content = document.getElementById('cleaningRecommendations');
+    
+    // Hide loading
+    document.getElementById('cleaningLoading').style.display = 'none';
+    content.style.display = 'block';
+    
+    // Show export button
+    document.getElementById('exportBtn').style.display = 'inline-block';
+    
+    let html = '';
+    
+    // Summary section
+    html += `
+        <div class="recommendation-section">
+            <h4><i class="fas fa-info-circle"></i> Summary</h4>
+            <p>${recommendations.summary}</p>
+        </div>
+    `;
+    
+    // Data quality score
+    html += `
+        <div class="data-quality-score">
+            <div class="score-label">Data Quality Score</div>
+            <div class="score-value">${recommendations.data_quality_score}</div>
+        </div>
+    `;
+    
+    // Critical issues
+    if (recommendations.critical_issues && recommendations.critical_issues.length > 0) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-exclamation-triangle"></i> Critical Issues</h4>
+        `;
+        
+        recommendations.critical_issues.forEach(issue => {
+            html += `
+                <div class="critical-issue ${issue.severity}">
+                    <div class="issue-header">
+                        <strong>${issue.issue}</strong>
+                        <span class="severity-badge ${issue.severity}">${issue.severity.toUpperCase()}</span>
+                    </div>
+                    <p><strong>Impact:</strong> ${issue.impact}</p>
+                    <p><strong>Recommendation:</strong> ${issue.recommendation}</p>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+    }
+    
+    // Cleaning steps
+    if (recommendations.cleaning_steps && recommendations.cleaning_steps.length > 0) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-tools"></i> Recommended Cleaning Steps</h4>
+        `;
+        
+        recommendations.cleaning_steps.forEach(step => {
+            html += `
+                <div class="cleaning-step">
+                    <div class="step-header">
+                        <span class="step-number">${step.step}</span>
+                        <span class="priority-badge ${step.priority}">${step.priority}</span>
+                    </div>
+                    <h5>${step.action}</h5>
+                    <p><strong>Columns:</strong> ${step.columns.join(', ')}</p>
+                    <p><strong>Method:</strong> ${step.method}</p>
+                    <p><strong>Expected Outcome:</strong> ${step.expected_outcome}</p>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+    }
+    
+    // Next steps
+    if (recommendations.next_steps) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-arrow-right"></i> Next Steps</h4>
+                <p>${recommendations.next_steps}</p>
+            </div>
+        `;
+    }
+    
+    content.innerHTML = html;
+}
+
+// Function to close cleaning modal
+function closeCleaningModal() {
+    document.getElementById('cleaningModal').style.display = 'none';
+}
+
+// Function to export recommendations
+function exportRecommendations() {
+    if (!cleaningRecommendations) return;
+    
+    const dataStr = JSON.stringify(cleaningRecommendations, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `cleaning_recommendations_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+}
+
+// Update the startAnalysis function to show the cleaning recommendations button
+async function startAnalysis() {
+    try {
+        // ... existing analysis code ...
+        
+        // After successful analysis, show the cleaning recommendations button
+        document.getElementById('cleaningRecommendationsBtn').style.display = 'inline-block';
+        
+        // ... rest of existing code ...
+        
+    } catch (error) {
+        console.error('Analysis error:', error);
+        // ... existing error handling ...
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('cleaningModal');
+    if (event.target === modal) {
+        closeCleaningModal();
+    }
 }

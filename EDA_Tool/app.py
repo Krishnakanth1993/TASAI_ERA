@@ -16,15 +16,29 @@ import base64
 from datetime import datetime
 import warnings
 
+# Import our new modules
+from config import Config
+from services.gemini_service import GeminiService
+
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
-app.secret_key = 'eda_tool_secret_key_2024'
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB limit
-app.config['UPLOAD_FOLDER'] = 'temp_uploads'
+app.secret_key = Config.SECRET_KEY
+app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
+app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize Gemini service if API key is available
+gemini_service = None
+if Config.validate_config():
+    try:
+        gemini_service = GeminiService()
+        print("Gemini service initialized successfully")
+    except Exception as e:
+        print(f"Failed to initialize Gemini service: {str(e)}")
+        gemini_service = None
 
 # Supported file extensions
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
@@ -665,6 +679,52 @@ def clean_data():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/get_cleaning_recommendations', methods=['POST'])
+def get_cleaning_recommendations():
+    """Get LLM-based data cleaning recommendations"""
+    try:
+        if 'data' not in session:
+            return jsonify({'error': 'No data available for analysis'}), 400
+        
+        if not gemini_service:
+            return jsonify({'error': 'LLM service not available. Please check API configuration.'}), 503
+        
+        # Get comprehensive data statistics
+        data = session['data']
+        df = pd.DataFrame(data)
+        
+        # Collect all available statistics
+        data_stats = {
+            'data_info': get_data_info(df),
+            'descriptive_stats': get_descriptive_stats(df),
+            'categorical_stats': get_categorical_stats(df),
+            'outliers': detect_outliers(df),
+            'normality_tests': run_normality_tests(df),
+            'correlations': get_correlations(df),
+            'missing_values': df.isnull().sum().to_dict(),
+            'data_types': {col: str(dtype) for col, dtype in df.dtypes.items()},
+            'shape': df.shape,
+            'memory_usage': df.memory_usage(deep=True).sum()
+        }
+        
+        # Get recommendations from Gemini
+        recommendations = gemini_service.get_cleaning_recommendations(data_stats)
+        
+        if recommendations:
+            # Store recommendations in session for reuse
+            session['cleaning_recommendations'] = recommendations
+            
+            return jsonify({
+                'success': True,
+                'recommendations': recommendations
+            })
+        else:
+            return jsonify({'error': 'Failed to generate cleaning recommendations'}), 500
+            
+    except Exception as e:
+        print(f"Error getting cleaning recommendations: {str(e)}")
+        return jsonify({'error': f'Failed to get recommendations: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

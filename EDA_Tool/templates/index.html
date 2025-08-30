@@ -79,9 +79,16 @@
                 <h2>Data Analysis</h2>
                 <p>Click the analyze button to get comprehensive statistics and insights about your dataset.</p>
                 
-                <button class="btn" onclick="startAnalysis()">
-                    <i class="fas fa-play"></i> Run Analysis
-                </button>
+                <div class="analysis-actions">
+                    <button class="btn" onclick="startAnalysis()">
+                        <i class="fas fa-play"></i> Run Analysis
+                    </button>
+                    
+                    <!-- New Cleaning Recommendations Button -->
+                    <button class="btn btn-ai" id="cleaningRecommendationsBtn" onclick="getCleaningRecommendations()" style="display: none;">
+                        <i class="fas fa-robot"></i> Get AI Cleaning Recommendations
+                    </button>
+                </div>
 
                 <div id="analysisContent">
                     <!-- Analysis results will be displayed here -->
@@ -199,6 +206,34 @@
                 </div>
 
                 <div id="reportPreview" class="report-preview" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cleaning Recommendations Modal -->
+    <div id="cleaningModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-robot"></i> AI Data Cleaning Recommendations</h3>
+                <span class="close" onclick="closeCleaningModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="cleaningContent">
+                    <!-- Loading state -->
+                    <div id="cleaningLoading" class="loading">
+                        <div class="spinner"></div>
+                        <p>Generating AI recommendations...</p>
+                    </div>
+                    
+                    <!-- Recommendations content will be populated here -->
+                    <div id="cleaningRecommendations" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCleaningModal()">Close</button>
+                <button class="btn btn-primary" onclick="exportRecommendations()" id="exportBtn" style="display: none;">
+                    <i class="fas fa-download"></i> Export Recommendations
+                </button>
             </div>
         </div>
     </div>
