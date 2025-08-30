@@ -92,7 +92,7 @@ Focus on:
 6. Statistical anomalies
 
 Provide practical, implementable recommendations that a data scientist can follow.
-Use bullet points and be concise.If possible use icons to make it more engaging.
+Use bullet points and be concise summary.Use icons to make it more engaging.
 """
         return prompt
     
