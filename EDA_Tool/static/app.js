@@ -649,7 +649,7 @@ function displayAnalysisResults(data) {
     
     let html = '<div class="analysis-results">';
     
-    // Basic Statistics Section - Tabular Format
+    // Basic Statistics Section - Unpivoted Format (Metrics as columns, original columns as rows)
     if (data.basic_stats) {
         html += `
             <div class="analysis-section">
@@ -658,19 +658,34 @@ function displayAnalysisResults(data) {
                     <table class="analysis-table">
                         <thead>
                             <tr>
-                                <th>Metric</th>
-                                ${Object.keys(data.basic_stats).map(col => `<th>${col}</th>`).join('')}
+                                <th>Column</th>
+                                <th>Count</th>
+                                <th>Mean</th>
+                                <th>Std</th>
+                                <th>Min</th>
+                                <th>25%</th>
+                                <th>50%</th>
+                                <th>75%</th>
+                                <th>Max</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td><strong>Count</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].count || 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Mean</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].mean !== 'N/A' ? data.basic_stats[col].mean.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Std</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].std !== 'N/A' ? data.basic_stats[col].std.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Min</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].min !== 'N/A' ? data.basic_stats[col].min.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>25%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['25%'] !== 'N/A' ? data.basic_stats[col]['25%'].toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>50%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['50%'] !== 'N/A' ? data.basic_stats[col]['50%'].toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>75%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['75%'] !== 'N/A' ? data.basic_stats[col]['75%'].toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Max</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].max !== 'N/A' ? data.basic_stats[col].max.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
+                            ${Object.keys(data.basic_stats).map(col => {
+                                const stats = data.basic_stats[col];
+                                return `
+                                    <tr>
+                                        <td><strong>${col}</strong></td>
+                                        <td>${stats.count || 'N/A'}</td>
+                                        <td>${stats.mean !== undefined && stats.mean !== 'N/A' ? stats.mean.toFixed(3) : 'N/A'}</td>
+                                        <td>${stats.std !== undefined && stats.std !== 'N/A' ? stats.std.toFixed(3) : 'N/A'}</td>
+                                        <td>${stats.min !== undefined && stats.min !== 'N/A' ? stats.min.toFixed(3) : 'N/A'}</td>
+                                        <td>${stats['25%'] !== undefined && stats['25%'] !== 'N/A' ? stats['25%'].toFixed(3) : 'N/A'}</td>
+                                        <td>${stats['50%'] !== undefined && stats['50%'] !== 'N/A' ? stats['50%'].toFixed(3) : 'N/A'}</td>
+                                        <td>${stats['75%'] !== undefined && stats['75%'] !== 'N/A' ? stats['75%'].toFixed(3) : 'N/A'}</td>
+                                        <td>${stats.max !== undefined && stats.max !== 'N/A' ? stats.max.toFixed(3) : 'N/A'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -846,7 +861,7 @@ function displayAnalysisResults(data) {
         `;
     }
     
-    // Normality Tests Section - New
+    // Normality Tests Section - Enhanced with colored assessment badges
     if (data.normality_tests) {
         html += `
             <div class="analysis-section">
@@ -872,13 +887,29 @@ function displayAnalysisResults(data) {
                                 const shapiroP = testData.shapiro_wilk_p;
                                 const assessment = testData.assessment || 'N/A';
                                 
+                                // Determine assessment class for styling - FIXED VERSION
+                                let assessmentClass = 'assessment-unknown';
+                                const assessmentLower = assessment.toLowerCase();
+                                
+                                if (assessmentLower.includes('normal') && !assessmentLower.includes('approximately') && !assessmentLower.includes('non')) {
+                                    assessmentClass = 'assessment-normal';
+                                } else if (assessmentLower.includes('approximately')) {
+                                    assessmentClass = 'assessment-approximately';
+                                } else if (assessmentLower.includes('moderately') || assessmentLower.includes('skewed')) {
+                                    assessmentClass = 'assessment-moderate';
+                                } else if (assessmentLower.includes('non-normal')) {
+                                    assessmentClass = 'assessment-non-normal';
+                                }
+                                
+                                console.log(`Assessment: "${assessment}" -> Class: "${assessmentClass}"`); // Debug log
+                                
                                 return `
                                     <tr>
                                         <td><strong>${column}</strong></td>
                                         <td>${skewness !== 'N/A' ? skewness : 'N/A'}</td>
                                         <td>${kurtosis !== 'N/A' ? kurtosis : 'N/A'}</td>
                                         <td>${shapiroP !== 'N/A' ? shapiroP : 'N/A'}</td>
-                                        <td><span class="assessment-badge assessment-${assessment.toLowerCase().replace(' ', '-')}">${assessment}</span></td>
+                                        <td><span class="assessment-badge ${assessmentClass}">${assessment}</span></td>
                                     </tr>
                                 `;
                             }).join('')}
@@ -887,6 +918,12 @@ function displayAnalysisResults(data) {
                 </div>
                 <div class="normality-legend">
                     <p><strong>Normality Assessment Guide:</strong></p>
+                    <div class="assessment-legend">
+                        <span class="legend-item"><span class="legend-color normal"></span> Normal</span>
+                        <span class="legend-item"><span class="legend-color approximately"></span> Approximately Normal</span>
+                        <span class="legend-item"><span class="legend-color moderate"></span> Moderately Skewed</span>
+                        <span class="legend-item"><span class="legend-color non-normal"></span> Non-Normal</span>
+                    </div>
                     <ul>
                         <li><strong>Normal:</strong> |Skewness| ≤ 0.5 and |Kurtosis| ≤ 1</li>
                         <li><strong>Moderately Skewed:</strong> |Skewness| > 0.5 or |Kurtosis| > 1</li>
@@ -2289,7 +2326,7 @@ function displayAnalysisResults(data) {
     
     let html = '<div class="analysis-results">';
     
-    // Basic Statistics Section - Tabular Format
+    // Basic Statistics Section - Unpivoted Format (Metrics as columns, original columns as rows)
     if (data.basic_stats) {
         html += `
             <div class="analysis-section">
@@ -2298,19 +2335,34 @@ function displayAnalysisResults(data) {
                     <table class="analysis-table">
                         <thead>
                             <tr>
-                                <th>Metric</th>
-                                ${Object.keys(data.basic_stats).map(col => `<th>${col}</th>`).join('')}
+                                <th>Column</th>
+                                <th>Count</th>
+                                <th>Mean</th>
+                                <th>Std</th>
+                                <th>Min</th>
+                                <th>25%</th>
+                                <th>50%</th>
+                                <th>75%</th>
+                                <th>Max</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td><strong>Count</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].count || 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Mean</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].mean !== 'N/A' ? data.basic_stats[col].mean.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Std</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].std !== 'N/A' ? data.basic_stats[col].std.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Min</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].min !== 'N/A' ? data.basic_stats[col].min.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>25%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['25%'] !== 'N/A' ? data.basic_stats[col]['25%'].toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>50%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['50%'] !== 'N/A' ? data.basic_stats[col]['50%'].toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>75%</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col]['75%'] !== 'N/A' ? data.basic_stats[col]['75%'].toFixed(3) : 'N/A'}</td>`).join('')}</tr>
-                            <tr><td><strong>Max</strong></td>${Object.keys(data.basic_stats).map(col => `<td>${data.basic_stats[col].max !== 'N/A' ? data.basic_stats[col].max.toFixed(3) : 'N/A'}</td>`).join('')}</tr>
+                            ${Object.keys(data.basic_stats).map(col => {
+                                const stats = data.basic_stats[col];
+                                return `
+                                    <tr>
+                                        <td><strong>${col}</strong></td>
+                                        <td>${stats.count || 'N/A'}</td>
+                                        <td>${stats.mean !== undefined && stats.mean !== 'N/A' ? stats.mean.toFixed(3) : 'N/A'}</td>
+                                        <td>${stats.std !== undefined && stats.std !== 'N/A' ? stats.std.toFixed(3) : 'N/A'}</td>
+                                        <td>${stats.min !== undefined && stats.min !== 'N/A' ? stats.min.toFixed(3) : 'N/A'}</td>
+                                        <td>${stats['25%'] !== undefined && stats['25%'] !== 'N/A' ? stats['25%'].toFixed(3) : 'N/A'}</td>
+                                        <td>${stats['50%'] !== undefined && stats['50%'] !== 'N/A' ? stats['50%'].toFixed(3) : 'N/A'}</td>
+                                        <td>${stats['75%'] !== undefined && stats['75%'] !== 'N/A' ? stats['75%'].toFixed(3) : 'N/A'}</td>
+                                        <td>${stats.max !== undefined && stats.max !== 'N/A' ? stats.max.toFixed(3) : 'N/A'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -2486,7 +2538,7 @@ function displayAnalysisResults(data) {
         `;
     }
     
-    // Normality Tests Section - New
+    // Normality Tests Section - Enhanced with colored assessment badges
     if (data.normality_tests) {
         html += `
             <div class="analysis-section">
@@ -2512,13 +2564,29 @@ function displayAnalysisResults(data) {
                                 const shapiroP = testData.shapiro_wilk_p;
                                 const assessment = testData.assessment || 'N/A';
                                 
+                                // Determine assessment class for styling - FIXED VERSION
+                                let assessmentClass = 'assessment-unknown';
+                                const assessmentLower = assessment.toLowerCase();
+                                
+                                if (assessmentLower.includes('normal') && !assessmentLower.includes('approximately') && !assessmentLower.includes('non')) {
+                                    assessmentClass = 'assessment-normal';
+                                } else if (assessmentLower.includes('approximately')) {
+                                    assessmentClass = 'assessment-approximately';
+                                } else if (assessmentLower.includes('moderately') || assessmentLower.includes('skewed')) {
+                                    assessmentClass = 'assessment-moderate';
+                                } else if (assessmentLower.includes('non-normal')) {
+                                    assessmentClass = 'assessment-non-normal';
+                                }
+                                
+                                console.log(`Assessment: "${assessment}" -> Class: "${assessmentClass}"`); // Debug log
+                                
                                 return `
                                     <tr>
                                         <td><strong>${column}</strong></td>
                                         <td>${skewness !== 'N/A' ? skewness : 'N/A'}</td>
                                         <td>${kurtosis !== 'N/A' ? kurtosis : 'N/A'}</td>
                                         <td>${shapiroP !== 'N/A' ? shapiroP : 'N/A'}</td>
-                                        <td><span class="assessment-badge assessment-${assessment.toLowerCase().replace(' ', '-')}">${assessment}</span></td>
+                                        <td><span class="assessment-badge ${assessmentClass}">${assessment}</span></td>
                                     </tr>
                                 `;
                             }).join('')}
@@ -2527,6 +2595,12 @@ function displayAnalysisResults(data) {
                 </div>
                 <div class="normality-legend">
                     <p><strong>Normality Assessment Guide:</strong></p>
+                    <div class="assessment-legend">
+                        <span class="legend-item"><span class="legend-color normal"></span> Normal</span>
+                        <span class="legend-item"><span class="legend-color approximately"></span> Approximately Normal</span>
+                        <span class="legend-item"><span class="legend-color moderate"></span> Moderately Skewed</span>
+                        <span class="legend-item"><span class="legend-color non-normal"></span> Non-Normal</span>
+                    </div>
                     <ul>
                         <li><strong>Normal:</strong> |Skewness| ≤ 0.5 and |Kurtosis| ≤ 1</li>
                         <li><strong>Moderately Skewed:</strong> |Skewness| > 0.5 or |Kurtosis| > 1</li>
