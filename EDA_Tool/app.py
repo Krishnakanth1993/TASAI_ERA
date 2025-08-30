@@ -413,79 +413,37 @@ def analyze_data():
             if df[col].dtype == 'bool':
                 df[col] = df[col].astype(str)
         
-        # Perform analysis
+        # Get all the analysis results
         analysis_results = {}
         
         # Basic statistics
-        basic_stats = df.describe().to_dict()
-        # Convert numpy types to native Python types
-        analysis_results['basic_stats'] = convert_numpy_types(basic_stats)
+        analysis_results['basic_stats'] = get_descriptive_stats(df)
+        
+        # Categorical statistics
+        analysis_results['categorical_stats'] = get_categorical_stats(df)
+        
+        # Missing values
+        analysis_results['missing_values'] = df.isnull().sum().to_dict()
         
         # Data types
         analysis_results['dtypes'] = {col: str(dtype) for col, dtype in df.dtypes.items()}
         
-        # Missing values
-        missing_values = df.isnull().sum().to_dict()
-        analysis_results['missing_values'] = convert_numpy_types(missing_values)
+        # Outliers
+        analysis_results['outliers'] = detect_outliers(df)
         
-        # Unique values for categorical columns
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
-        analysis_results['unique_values'] = {}
-        for col in categorical_cols:
-            unique_vals = df[col].unique()
-            # Convert numpy types to native Python types
-            analysis_results['unique_values'][col] = [str(val) if pd.isna(val) else val for val in unique_vals]
+        # Normality tests
+        analysis_results['normality_tests'] = run_normality_tests(df)
         
-        # Numerical columns analysis
-        numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns
-        analysis_results['numerical_analysis'] = {}
+        # Correlations
+        analysis_results['correlations'] = get_correlations(df)
         
-        for col in numerical_cols:
-            col_data = df[col].dropna()
-            if len(col_data) > 0:
-                analysis_results['numerical_analysis'][col] = {
-                    'mean': float(col_data.mean()) if not pd.isna(col_data.mean()) else None,
-                    'median': float(col_data.median()) if not pd.isna(col_data.median()) else None,
-                    'std': float(col_data.std()) if not pd.isna(col_data.std()) else None,
-                    'min': float(col_data.min()) if not pd.isna(col_data.min()) else None,
-                    'max': float(col_data.max()) if not pd.isna(col_data.max()) else None,
-                    'skewness': float(col_data.skew()) if not pd.isna(col_data.skew()) else None,
-                    'kurtosis': float(col_data.kurtosis()) if not pd.isna(col_data.kurtosis()) else None
-                }
-        
-        # Correlation matrix for numerical columns
-        if len(numerical_cols) > 1:
-            corr_matrix = df[numerical_cols].corr()
-            # Convert correlation matrix to serializable format
-            analysis_results['correlation'] = {}
-            for i, col1 in enumerate(numerical_cols):
-                analysis_results['correlation'][col1] = {}
-                for j, col2 in enumerate(numerical_cols):
-                    corr_val = corr_matrix.iloc[i, j]
-                    analysis_results['correlation'][col1][col2] = float(corr_val) if not pd.isna(corr_val) else None
-        
-        # Add missing analysis components with proper type conversion
-        try:
-            outliers = detect_outliers(df)
-            analysis_results['outliers'] = convert_numpy_types(outliers)
-        except Exception as e:
-            print(f"Error in outlier detection: {e}")
-            analysis_results['outliers'] = {}
-        
-        try:
-            normality_tests = run_normality_tests(df)
-            analysis_results['normality_tests'] = convert_numpy_types(normality_tests)
-        except Exception as e:
-            print(f"Error in normality tests: {e}")
-            analysis_results['normality_tests'] = {}
-        
-        # Ensure all values are JSON serializable
-        analysis_results = convert_numpy_types(analysis_results)
+        # Store the complete analysis results in session
+        session['analysis_results'] = analysis_results
         
         return jsonify(analysis_results)
         
     except Exception as e:
-        print(f"Analysis error: {str(e)}")
+        print(f"Error in analyze_data: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
@@ -759,7 +717,7 @@ def clean_data():
 
 @app.route('/get_cleaning_recommendations', methods=['POST'])
 def get_cleaning_recommendations():
-    """Get LLM-based data cleaning recommendations"""
+    """Get LLM-based data cleaning recommendations using existing analysis results"""
     try:
         print("=== Starting cleaning recommendations request ===")
         
@@ -776,75 +734,46 @@ def get_cleaning_recommendations():
                 'details': 'Make sure you have created a .env file with your GEMINI_API_KEY'
             }), 503
         
-        # Get data from session
-        data = session['data']
-        df = pd.DataFrame(data)
+        # Check if analysis results exist in session
+        if 'analysis_results' not in session:
+            print("No analysis results found. Please run analysis first.")
+            return jsonify({
+                'error': 'No analysis results available. Please run the analysis first.',
+                'details': 'Click "Run Analysis" to generate statistics before getting recommendations.'
+            }), 400
         
-        print(f"Data loaded successfully. Shape: {df.shape}")
+        print("✓ Found existing analysis results in session")
         
-        # Collect statistics step by step with error handling
-        data_stats = {}
+        # Get the existing analysis results
+        analysis_results = session['analysis_results']
+        print(f"Analysis results keys: {list(analysis_results.keys())}")
         
+        # Convert NumPy types to Python native types for JSON serialization
+        def convert_numpy_types(obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, dict):
+                return {key: convert_numpy_types(value) for key, value in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_numpy_types(item) for item in obj]
+            elif pd.isna(obj):
+                return None
+            else:
+                return obj
+        
+        # Convert the analysis results to JSON-serializable format
+        print("Converting analysis results to JSON-serializable format...")
+        serializable_results = convert_numpy_types(analysis_results)
+        print("✓ Conversion completed")
+        
+        # Call Gemini service with existing results
         try:
-            print("Collecting data info...")
-            data_stats['data_info'] = get_data_info(df)
-            print("✓ Data info collected")
-        except Exception as e:
-            print(f"✗ Error collecting data info: {e}")
-            data_stats['data_info'] = {}
-        
-        try:
-            print("Collecting descriptive stats...")
-            data_stats['descriptive_stats'] = get_descriptive_stats(df)
-            print("✓ Descriptive stats collected")
-        except Exception as e:
-            print(f"✗ Error collecting descriptive stats: {e}")
-            data_stats['descriptive_stats'] = {}
-        
-        try:
-            print("Collecting categorical stats...")
-            data_stats['categorical_stats'] = get_categorical_stats(df)
-            print("✓ Categorical stats collected")
-        except Exception as e:
-            print(f"✗ Error collecting categorical stats: {e}")
-            data_stats['categorical_stats'] = {}
-        
-        try:
-            print("Detecting outliers...")
-            data_stats['outliers'] = detect_outliers(df)
-            print("✓ Outliers detected")
-        except Exception as e:
-            print(f"✗ Error detecting outliers: {e}")
-            data_stats['outliers'] = {}
-        
-        try:
-            print("Running normality tests...")
-            data_stats['normality_tests'] = run_normality_tests(df)
-            print("✓ Normality tests completed")
-        except Exception as e:
-            print(f"✗ Error running normality tests: {e}")
-            data_stats['normality_tests'] = {}
-        
-        try:
-            print("Calculating correlations...")
-            data_stats['correlations'] = get_correlations(df)
-            print("✓ Correlations calculated")
-        except Exception as e:
-            print(f"✗ Error calculating correlations: {e}")
-            data_stats['correlations'] = {}
-        
-        # Add basic stats
-        data_stats['missing_values'] = df.isnull().sum().to_dict()
-        data_stats['data_types'] = {col: str(dtype) for col, dtype in df.dtypes.items()}
-        data_stats['shape'] = df.shape
-        data_stats['memory_usage'] = df.memory_usage(deep=True).sum()
-        
-        print(f"All statistics collected. Total categories: {len(data_stats)}")
-        
-        # Call Gemini service
-        try:
-            print("Calling Gemini service...")
-            recommendations = gemini_service.get_cleaning_recommendations(data_stats)
+            print("Calling Gemini service with existing analysis data...")
+            recommendations = gemini_service.get_cleaning_recommendations(serializable_results)
             
             if recommendations:
                 print("✓ Gemini recommendations received")
@@ -853,7 +782,8 @@ def get_cleaning_recommendations():
                 
                 return jsonify({
                     'success': True,
-                    'recommendations': recommendations
+                    'recommendations': recommendations,
+                    'message': 'Recommendations generated using existing analysis results'
                 })
             else:
                 print("✗ Gemini returned no recommendations")

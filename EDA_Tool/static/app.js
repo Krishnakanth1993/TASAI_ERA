@@ -651,210 +651,278 @@ function displayAnalysisResults(data) {
     // Basic statistics
     if (data.basic_stats) {
         html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-calculator"></i> Basic Statistics</h4>';
-        html += '<div class="stats-table-container">';
-        html += '<table class="stats-table">';
-        html += '<thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead>';
-        html += '<tbody>';
+        html += '<h3><i class="fas fa-calculator"></i> Basic Statistics</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead><tbody>';
         
-        for (const [col, stats] of Object.entries(data.basic_stats)) {
+        Object.keys(data.basic_stats).forEach(col => {
+            const stats = data.basic_stats[col];
             if (typeof stats === 'object' && stats !== null) {
-                html += '<tr>';
-                html += `<td class="column-name"><i class="fas fa-columns"></i> ${col}</td>`;
-                html += `<td class="stat-value">${stats.count || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.mean ? stats.mean.toFixed(4) : 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.std ? stats.std.toFixed(4) : 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.min || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats['25%'] || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats['50%'] || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats['75%'] || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.max || 'N/A'}</td>`;
-                html += '</tr>';
+                html += `<tr>
+                    <td><strong>${col}</strong></td>
+                    <td>${stats.count || 'N/A'}</td>
+                    <td>${stats.mean ? stats.mean.toFixed(4) : 'N/A'}</td>
+                    <td>${stats.std ? stats.std.toFixed(4) : 'N/A'}</td>
+                    <td>${stats.min !== undefined ? stats.min.toFixed(4) : 'N/A'}</td>
+                    <td>${stats['25%'] ? stats['25%'].toFixed(4) : 'N/A'}</td>
+                    <td>${stats['50%'] ? stats['50%'].toFixed(4) : 'N/A'}</td>
+                    <td>${stats['75%'] ? stats['75%'].toFixed(4) : 'N/A'}</td>
+                    <td>${stats.max !== undefined ? stats.max.toFixed(4) : 'N/A'}</td>
+                </tr>`;
             }
-        }
+        });
+        
         html += '</tbody></table></div></div>';
     }
     
     // Missing values
     if (data.missing_values) {
         html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-exclamation-triangle"></i> Missing Values</h4>';
-        html += '<div class="missing-values-container">';
+        html += '<h3><i class="fas fa-exclamation-triangle"></i> Missing Values</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Missing Count</th><th>Missing %</th><th>Status</th></tr></thead><tbody>';
         
-        const hasMissingValues = Object.values(data.missing_values).some(count => count > 0);
-        
-        if (hasMissingValues) {
-            html += '<table class="missing-table">';
-            html += '<thead><tr><th>Column</th><th>Missing Count</th><th>Missing %</th><th>Status</th></tr></thead>';
-            html += '<tbody>';
+        Object.entries(data.missing_values).forEach(([col, count]) => {
+            const percentage = ((count / data.total_rows) * 100).toFixed(2);
+            let statusClass = 'status-perfect';
+            let statusText = 'Perfect';
             
-        for (const [col, count] of Object.entries(data.missing_values)) {
-            if (count > 0) {
-                    const percentage = ((count / data.basic_stats[col]?.count) * 100).toFixed(2);
-                    const status = percentage > 20 ? 'high' : percentage > 5 ? 'medium' : 'low';
-                    html += `<tr class="missing-row ${status}">`;
-                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-                    html += `<td>${count}</td>`;
-                    html += `<td>${percentage}%</td>`;
-                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
-            html += '</tr>';
-        }
-            }
-            html += '</tbody></table>';
-        } else {
-            html += '<div class="no-missing-values">';
-            html += '<i class="fas fa-check-circle"></i>';
-            html += '<p>No missing values found in the dataset!</p>';
-    html += '</div>';
-        }
-        html += '</div></div>';
-    }
-    
-    // Outlier Analysis
-    if (data.outliers) {
-        html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-bullseye"></i> Outlier Analysis</h4>';
-        html += '<div class="outliers-container">';
-        
-        const hasOutliers = Object.values(data.outliers).some(outlier => outlier.count > 0);
-        
-        if (hasOutliers) {
-            html += '<table class="outliers-table">';
-            html += '<thead><tr><th>Column</th><th>Outlier Count</th><th>Lower Bound</th><th>Upper Bound</th><th>Status</th></tr></thead>';
-            html += '<tbody>';
-            
-            for (const [col, outlier] of Object.entries(data.outliers)) {
-                if (outlier.count > 0) {
-                    const percentage = ((outlier.count / data.basic_stats[col]?.count) * 100).toFixed(2);
-                    const status = percentage > 10 ? 'high' : percentage > 5 ? 'medium' : 'low';
-                    html += `<tr class="outlier-row ${status}">`;
-                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-                    html += `<td>${outlier.count} (${percentage}%)</td>`;
-                    html += `<td>${outlier.lower_bound ? outlier.lower_bound.toFixed(4) : 'N/A'}</td>`;
-                    html += `<td>${outlier.upper_bound ? outlier.upper_bound.toFixed(4) : 'N/A'}</td>`;
-                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
-                    html += '</tr>';
-                }
-            }
-            html += '</tbody></table>';
-                } else {
-            html += '<div class="no-outliers">';
-            html += '<i class="fas fa-check-circle"></i>';
-            html += '<p>No outliers detected using IQR method!</p>';
-    html += '</div>';
-        }
-        html += '</div></div>';
-    }
-    
-    // Normality Tests
-    if (data.normality_tests) {
-        html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-chart-line"></i> Normality Tests</h4>';
-        html += '<div class="normality-container">';
-        html += '<table class="normality-table">';
-        html += '<thead><tr><th>Column</th><th>Skewness</th><th>Kurtosis</th><th>Normality</th><th>Assessment</th></tr></thead>';
-        html += '<tbody>';
-        
-        for (const [col, test] of Object.entries(data.normality_tests)) {
-            const skewness = test.skewness;
-            const kurtosis = test.kurtosis;
-            
-            // Determine normality
-            let normality, assessment, status;
-            if (Math.abs(skewness) <= 0.5 && Math.abs(kurtosis) <= 1) {
-                normality = 'Normal';
-                assessment = 'Data follows normal distribution';
-                status = 'normal';
-            } else if (Math.abs(skewness) <= 1 && Math.abs(kurtosis) <= 2) {
-                normality = 'Moderate';
-                assessment = 'Slight deviation from normal';
-                status = 'moderate';
-        } else {
-                normality = 'Non-Normal';
-                assessment = 'Significant deviation from normal';
-                status = 'non-normal';
+            if (percentage > 20) {
+                statusClass = 'status-critical';
+                statusText = 'Critical';
+            } else if (percentage > 10) {
+                statusClass = 'status-warning';
+                statusText = 'Warning';
+            } else if (percentage > 5) {
+                statusClass = 'status-good';
+                statusText = 'Good';
             }
             
-            html += `<tr class="normality-row ${status}">`;
-            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-            html += `<td class="${Math.abs(skewness) > 1 ? 'highlight' : ''}">${skewness ? skewness.toFixed(4) : 'N/A'}</td>`;
-            html += `<td class="${Math.abs(kurtosis) > 2 ? 'highlight' : ''}">${kurtosis ? kurtosis.toFixed(4) : 'N/A'}</td>`;
-            html += `<td><span class="normality-badge ${status}">${normality}</span></td>`;
-            html += `<td>${assessment}</td>`;
-            html += '</tr>';
-        }
-        html += '</tbody></table></div></div>';
-    }
-    
-    // Correlation matrix
-    if (data.correlation) {
-        html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-project-diagram"></i> Correlation Matrix</h4>';
-        html += '<div class="correlation-container">';
-        html += '<table class="correlation-table">';
-        html += '<thead><tr><th>Column</th>';
-        for (const col of Object.keys(data.correlation)) {
-            html += `<th>${col}</th>`;
-        }
-        html += '</tr></thead><tbody>';
+            html += `<tr>
+                <td><strong>${col}</strong></td>
+                <td>${count}</td>
+                <td>${percentage}%</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            </tr>`;
+        });
         
-        for (const [col1, correlations] of Object.entries(data.correlation)) {
-            html += '<tr>';
-            html += `<td class="column-header"><i class="fas fa-columns"></i> ${col1}</td>`;
-            for (const [col2, corr] of Object.entries(correlations)) {
-                if (col1 === col2) {
-                    html += '<td class="diagonal">1.000</td>';
-                } else {
-                    const corrValue = corr ? parseFloat(corr) : 0;
-                    let correlationClass = '';
-                    if (Math.abs(corrValue) >= 0.7) correlationClass = 'high-correlation';
-                    else if (Math.abs(corrValue) >= 0.3) correlationClass = 'medium-correlation';
-                    else correlationClass = 'low-correlation';
-                    
-                    html += `<td class="correlation-cell ${correlationClass}">${corrValue.toFixed(3)}</td>`;
-                }
-            }
-            html += '</tr>';
-        }
         html += '</tbody></table></div></div>';
     }
     
     // Data types
     if (data.dtypes) {
         html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-tags"></i> Data Types</h4>';
-        html += '<div class="dtypes-container">';
-        html += '<table class="dtypes-table">';
-        html += '<thead><tr><th>Column</th><th>Data Type</th><th>Category</th></tr></thead>';
-        html += '<tbody>';
+        html += '<h3><i class="fas fa-tags"></i> Data Types</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Data Type</th><th>Memory Usage</th></tr></thead><tbody>';
         
-        for (const [col, dtype] of Object.entries(data.dtypes)) {
-            let category, icon;
-            if (dtype.includes('int') || dtype.includes('float')) {
-                category = 'Numerical';
-                icon = 'fas fa-hashtag';
-            } else if (dtype.includes('object') || dtype.includes('category')) {
-                category = 'Categorical';
-                icon = 'fas fa-list';
-            } else if (dtype.includes('datetime')) {
-                category = 'DateTime';
-                icon = 'fas fa-calendar';
-            } else {
-                category = 'Other';
-                icon = 'fas fa-question';
-            }
-            
-            html += '<tr>';
-            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-            html += `<td><code>${dtype}</code></td>`;
-            html += `<td><i class="${icon}"></i> ${category}</td>`;
-            html += '</tr>';
-        }
+        Object.entries(data.dtypes).forEach(([col, dtype]) => {
+            html += `<tr>
+                <td><strong>${col}</strong></td>
+                <td><span class="dtype-badge">${dtype}</span></td>
+                <td>${data.memory_usage ? data.memory_usage[col] || 'N/A' : 'N/A'}</td>
+            </tr>`;
+        });
+        
         html += '</tbody></table></div></div>';
+    }
+    
+    // Outliers
+    if (data.outliers) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-bullseye"></i> Outlier Analysis</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Outlier Count</th><th>Outlier %</th><th>Method</th><th>Status</th></tr></thead><tbody>';
+        
+        Object.entries(data.outliers).forEach(([col, outlierData]) => {
+            if (outlierData && typeof outlierData === 'object') {
+                const count = outlierData.count || 0;
+                const percentage = ((count / data.total_rows) * 100).toFixed(2);
+                const method = outlierData.method || 'IQR';
+                
+                let statusClass = 'status-perfect';
+                let statusText = 'Perfect';
+                
+                if (percentage > 10) {
+                    statusClass = 'status-critical';
+                    statusText = 'Critical';
+                } else if (percentage > 5) {
+                    statusClass = 'status-warning';
+                    statusText = 'Warning';
+                } else if (percentage > 2) {
+                    statusClass = 'status-good';
+                    statusText = 'Good';
+                }
+                
+                html += `<tr>
+                    <td><strong>${col}</strong></td>
+                    <td>${count}</td>
+                    <td>${percentage}%</td>
+                    <td>${method}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                </tr>`;
+            }
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // Add outlier legend
+        html += '<div class="outlier-legend">';
+        html += '<p><strong>Outlier Detection Methods:</strong></p>';
+        html += '<ul>';
+        html += '<li><strong>IQR Method:</strong> Identifies outliers using the Interquartile Range (Q3 - Q1) × 1.5</li>';
+        html += '<li><strong>Z-Score Method:</strong> Identifies outliers using standard deviations from the mean</li>';
+        html += '<li><strong>Modified Z-Score:</strong> More robust version of Z-score using median and MAD</li>';
+        html += '</ul>';
+        html += '</div></div>';
+    }
+    
+    // Normality tests
+    if (data.normality_tests) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-chart-line"></i> Normality Tests</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Shapiro-Wilk p-value</th><th>Assessment</th><th>Interpretation</th></tr></thead><tbody>';
+        
+        Object.entries(data.normality_tests).forEach(([col, testData]) => {
+            if (testData && typeof testData === 'object') {
+                const pValue = testData.shapiro_wilk_p || testData.p_value || 'N/A';
+                let assessmentClass = 'assessment-non-normal';
+                let assessmentText = 'Non-Normal';
+                let interpretation = 'Data does not follow normal distribution';
+                
+                if (pValue !== 'N/A' && pValue > 0.05) {
+                    assessmentClass = 'assessment-normal';
+                    assessmentText = 'Normal';
+                    interpretation = 'Data follows normal distribution';
+                } else if (pValue !== 'N/A' && pValue > 0.01) {
+                    assessmentClass = 'assessment-moderate';
+                    assessmentText = 'Moderate';
+                    interpretation = 'Data may be approximately normal';
+                }
+                
+                html += `<tr>
+                    <td><strong>${col}</strong></td>
+                    <td>${pValue !== 'N/A' ? pValue.toFixed(6) : 'N/A'}</td>
+                    <td><span class="assessment-badge ${assessmentClass}">${assessmentText}</span></td>
+                    <td>${interpretation}</td>
+                </tr>`;
+            }
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // Add normality legend
+        html += '<div class="normality-legend">';
+        html += '<p><strong>Normality Test Interpretation:</strong></p>';
+        html += '<ul>';
+        html += '<li><strong>p-value > 0.05:</strong> Data is normally distributed (fail to reject null hypothesis)</li>';
+        html += '<li><strong>p-value ≤ 0.05:</strong> Data is not normally distributed (reject null hypothesis)</li>';
+        html += '<li><strong>Shapiro-Wilk Test:</strong> Most reliable test for normality, especially for small samples</li>';
+        html += '</ul>';
+        html += '</div></div>';
+    }
+    
+    // Correlations
+    if (data.correlations) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-project-diagram"></i> Correlation Analysis</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="correlation-table">';
+        
+        // Header row
+        html += '<thead><tr><th>Column</th>';
+        Object.keys(data.correlations).forEach(col => {
+            html += `<th>${col}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        // Data rows
+        Object.entries(data.correlations).forEach(([rowCol, correlations]) => {
+            html += '<tr>';
+            html += `<td><strong>${rowCol}</strong></td>`;
+            Object.entries(correlations).forEach(([colCol, corrValue]) => {
+                if (rowCol === colCol) {
+                    html += '<td class="correlation-na">-</td>';
+                } else {
+                    const value = parseFloat(corrValue);
+                    let corrClass = 'correlation-weak';
+                    
+                    if (Math.abs(value) >= 0.8) {
+                        corrClass = 'correlation-perfect';
+                    } else if (Math.abs(value) >= 0.6) {
+                        corrClass = 'correlation-strong';
+                    } else if (Math.abs(value) >= 0.4) {
+                        corrClass = 'correlation-moderate';
+                    }
+                    
+                    if (value < 0) {
+                        corrClass += '-neg';
+                    }
+                    
+                    html += `<td class="${corrClass}">${value.toFixed(3)}</td>`;
+                }
+            });
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // Add correlation legend
+        html += '<div class="correlation-legend">';
+        html += '<div class="legend-item"><div class="legend-color perfect"></div><span>Perfect (≥0.8)</span></div>';
+        html += '<div class="legend-item"><div class="legend-color strong"></div><span>Strong (≥0.6)</span></div>';
+        html += '<div class="legend-item"><div class="legend-color moderate"></div><span>Moderate (≥0.4)</span></div>';
+        html += '<div class="legend-item"><div class="legend-color weak"></div><span>Weak (<0.4)</span></div>';
+        html += '</div></div>';
+    }
+    
+    // Unique values for categorical columns
+    if (data.unique_values) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-list"></i> Unique Values Analysis</h3>';
+        html += '<div class="unique-values-grid">';
+        
+        Object.entries(data.unique_values).forEach(([col, uniqueData]) => {
+            if (uniqueData && typeof uniqueData === 'object') {
+                const count = uniqueData.count || 0;
+                const values = uniqueData.values || [];
+                const percentage = ((count / data.total_rows) * 100).toFixed(2);
+                
+                html += '<div class="unique-value-item">';
+                html += `<h4>${col}</h4>`;
+                html += '<div class="unique-stats">';
+                html += `<div class="stat-item">Count: ${count}</div>`;
+                html += `<div class="stat-item">Percentage: ${percentage}%</div>`;
+                html += '</div>';
+                
+                if (values.length > 0) {
+                    html += '<div class="unique-values-list">';
+                    values.slice(0, 10).forEach(value => {
+                        html += `<span class="unique-value">${value}</span>`;
+                    });
+                    if (values.length > 10) {
+                        html += `<span class="unique-value">+${values.length - 10} more</span>`;
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+        });
+        
+        html += '</div></div>';
     }
     
     html += '</div>';
     content.innerHTML = html;
+    
+    // Show the cleaning recommendations button after analysis is complete
+    showCleaningRecommendationsButton();
 }
 
 // Enhanced correlation class function
@@ -2211,210 +2279,278 @@ function displayAnalysisResults(data) {
     // Basic statistics
     if (data.basic_stats) {
         html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-calculator"></i> Basic Statistics</h4>';
-        html += '<div class="stats-table-container">';
-        html += '<table class="stats-table">';
-        html += '<thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead>';
-        html += '<tbody>';
+        html += '<h3><i class="fas fa-calculator"></i> Basic Statistics</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th></tr></thead><tbody>';
         
-        for (const [col, stats] of Object.entries(data.basic_stats)) {
+        Object.keys(data.basic_stats).forEach(col => {
+            const stats = data.basic_stats[col];
             if (typeof stats === 'object' && stats !== null) {
-                html += '<tr>';
-                html += `<td class="column-name"><i class="fas fa-columns"></i> ${col}</td>`;
-                html += `<td class="stat-value">${stats.count || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.mean ? stats.mean.toFixed(4) : 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.std ? stats.std.toFixed(4) : 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.min || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats['25%'] || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats['50%'] || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats['75%'] || 'N/A'}</td>`;
-                html += `<td class="stat-value">${stats.max || 'N/A'}</td>`;
-                html += '</tr>';
+                html += `<tr>
+                    <td><strong>${col}</strong></td>
+                    <td>${stats.count || 'N/A'}</td>
+                    <td>${stats.mean ? stats.mean.toFixed(4) : 'N/A'}</td>
+                    <td>${stats.std ? stats.std.toFixed(4) : 'N/A'}</td>
+                    <td>${stats.min !== undefined ? stats.min.toFixed(4) : 'N/A'}</td>
+                    <td>${stats['25%'] ? stats['25%'].toFixed(4) : 'N/A'}</td>
+                    <td>${stats['50%'] ? stats['50%'].toFixed(4) : 'N/A'}</td>
+                    <td>${stats['75%'] ? stats['75%'].toFixed(4) : 'N/A'}</td>
+                    <td>${stats.max !== undefined ? stats.max.toFixed(4) : 'N/A'}</td>
+                </tr>`;
             }
-        }
+        });
+        
         html += '</tbody></table></div></div>';
     }
     
     // Missing values
     if (data.missing_values) {
         html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-exclamation-triangle"></i> Missing Values</h4>';
-        html += '<div class="missing-values-container">';
+        html += '<h3><i class="fas fa-exclamation-triangle"></i> Missing Values</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Missing Count</th><th>Missing %</th><th>Status</th></tr></thead><tbody>';
         
-        const hasMissingValues = Object.values(data.missing_values).some(count => count > 0);
-        
-        if (hasMissingValues) {
-            html += '<table class="missing-table">';
-            html += '<thead><tr><th>Column</th><th>Missing Count</th><th>Missing %</th><th>Status</th></tr></thead>';
-            html += '<tbody>';
+        Object.entries(data.missing_values).forEach(([col, count]) => {
+            const percentage = ((count / data.total_rows) * 100).toFixed(2);
+            let statusClass = 'status-perfect';
+            let statusText = 'Perfect';
             
-            for (const [col, count] of Object.entries(data.missing_values)) {
-                if (count > 0) {
-                    const percentage = ((count / data.basic_stats[col]?.count) * 100).toFixed(2);
-                    const status = percentage > 20 ? 'high' : percentage > 5 ? 'medium' : 'low';
-                    html += `<tr class="missing-row ${status}">`;
-                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-                    html += `<td>${count}</td>`;
-                    html += `<td>${percentage}%</td>`;
-                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
-                    html += '</tr>';
-                }
-            }
-            html += '</tbody></table>';
-        } else {
-            html += '<div class="no-missing-values">';
-            html += '<i class="fas fa-check-circle"></i>';
-            html += '<p>No missing values found in the dataset!</p>';
-            html += '</div>';
-        }
-        html += '</div></div>';
-    }
-    
-    // Outlier Analysis
-    if (data.outliers) {
-        html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-bullseye"></i> Outlier Analysis</h4>';
-        html += '<div class="outliers-container">';
-        
-        const hasOutliers = Object.values(data.outliers).some(outlier => outlier.count > 0);
-        
-        if (hasOutliers) {
-            html += '<table class="outliers-table">';
-            html += '<thead><tr><th>Column</th><th>Outlier Count</th><th>Lower Bound</th><th>Upper Bound</th><th>Status</th></tr></thead>';
-            html += '<tbody>';
-            
-            for (const [col, outlier] of Object.entries(data.outliers)) {
-                if (outlier.count > 0) {
-                    const percentage = ((outlier.count / data.basic_stats[col]?.count) * 100).toFixed(2);
-                    const status = percentage > 10 ? 'high' : percentage > 5 ? 'medium' : 'low';
-                    html += `<tr class="outlier-row ${status}">`;
-                    html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-                    html += `<td>${outlier.count} (${percentage}%)</td>`;
-                    html += `<td>${outlier.lower_bound ? outlier.lower_bound.toFixed(4) : 'N/A'}</td>`;
-                    html += `<td>${outlier.upper_bound ? outlier.upper_bound.toFixed(4) : 'N/A'}</td>`;
-                    html += `<td><span class="status-badge ${status}">${status.toUpperCase()}</span></td>`;
-                    html += '</tr>';
-                }
-            }
-            html += '</tbody></table>';
-        } else {
-            html += '<div class="no-outliers">';
-            html += '<i class="fas fa-check-circle"></i>';
-            html += '<p>No outliers detected using IQR method!</p>';
-            html += '</div>';
-        }
-        html += '</div></div>';
-    }
-    
-    // Normality Tests
-    if (data.normality_tests) {
-        html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-chart-line"></i> Normality Tests</h4>';
-        html += '<div class="normality-container">';
-        html += '<table class="normality-table">';
-        html += '<thead><tr><th>Column</th><th>Skewness</th><th>Kurtosis</th><th>Normality</th><th>Assessment</th></tr></thead>';
-        html += '<tbody>';
-        
-        for (const [col, test] of Object.entries(data.normality_tests)) {
-            const skewness = test.skewness;
-            const kurtosis = test.kurtosis;
-            
-            // Determine normality
-            let normality, assessment, status;
-            if (Math.abs(skewness) <= 0.5 && Math.abs(kurtosis) <= 1) {
-                normality = 'Normal';
-                assessment = 'Data follows normal distribution';
-                status = 'normal';
-            } else if (Math.abs(skewness) <= 1 && Math.abs(kurtosis) <= 2) {
-                normality = 'Moderate';
-                assessment = 'Slight deviation from normal';
-                status = 'moderate';
-            } else {
-                normality = 'Non-Normal';
-                assessment = 'Significant deviation from normal';
-                status = 'non-normal';
+            if (percentage > 20) {
+                statusClass = 'status-critical';
+                statusText = 'Critical';
+            } else if (percentage > 10) {
+                statusClass = 'status-warning';
+                statusText = 'Warning';
+            } else if (percentage > 5) {
+                statusClass = 'status-good';
+                statusText = 'Good';
             }
             
-            html += `<tr class="normality-row ${status}">`;
-            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-            html += `<td class="${Math.abs(skewness) > 1 ? 'highlight' : ''}">${skewness ? skewness.toFixed(4) : 'N/A'}</td>`;
-            html += `<td class="${Math.abs(kurtosis) > 2 ? 'highlight' : ''}">${kurtosis ? kurtosis.toFixed(4) : 'N/A'}</td>`;
-            html += `<td><span class="normality-badge ${status}">${normality}</span></td>`;
-            html += `<td>${assessment}</td>`;
-            html += '</tr>';
-        }
-        html += '</tbody></table></div></div>';
-    }
-    
-    // Correlation matrix
-    if (data.correlation) {
-        html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-project-diagram"></i> Correlation Matrix</h4>';
-        html += '<div class="correlation-container">';
-        html += '<table class="correlation-table">';
-        html += '<thead><tr><th>Column</th>';
-        for (const col of Object.keys(data.correlation)) {
-            html += `<th>${col}</th>`;
-        }
-        html += '</tr></thead><tbody>';
+            html += `<tr>
+                <td><strong>${col}</strong></td>
+                <td>${count}</td>
+                <td>${percentage}%</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            </tr>`;
+        });
         
-        for (const [col1, correlations] of Object.entries(data.correlation)) {
-            html += '<tr>';
-            html += `<td class="column-header"><i class="fas fa-columns"></i> ${col1}</td>`;
-            for (const [col2, corr] of Object.entries(correlations)) {
-                if (col1 === col2) {
-                    html += '<td class="diagonal">1.000</td>';
-                } else {
-                    const corrValue = corr ? parseFloat(corr) : 0;
-                    let correlationClass = '';
-                    if (Math.abs(corrValue) >= 0.7) correlationClass = 'high-correlation';
-                    else if (Math.abs(corrValue) >= 0.3) correlationClass = 'medium-correlation';
-                    else correlationClass = 'low-correlation';
-                    
-                    html += `<td class="correlation-cell ${correlationClass}">${corrValue.toFixed(3)}</td>`;
-                }
-            }
-            html += '</tr>';
-        }
         html += '</tbody></table></div></div>';
     }
     
     // Data types
     if (data.dtypes) {
         html += '<div class="analysis-section">';
-        html += '<h4><i class="fas fa-tags"></i> Data Types</h4>';
-        html += '<div class="dtypes-container">';
-        html += '<table class="dtypes-table">';
-        html += '<thead><tr><th>Column</th><th>Data Type</th><th>Category</th></tr></thead>';
-        html += '<tbody>';
+        html += '<h3><i class="fas fa-tags"></i> Data Types</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Data Type</th><th>Memory Usage</th></tr></thead><tbody>';
         
-        for (const [col, dtype] of Object.entries(data.dtypes)) {
-            let category, icon;
-            if (dtype.includes('int') || dtype.includes('float')) {
-                category = 'Numerical';
-                icon = 'fas fa-hashtag';
-            } else if (dtype.includes('object') || dtype.includes('category')) {
-                category = 'Categorical';
-                icon = 'fas fa-list';
-            } else if (dtype.includes('datetime')) {
-                category = 'DateTime';
-                icon = 'fas fa-calendar';
-            } else {
-                category = 'Other';
-                icon = 'fas fa-question';
-            }
-            
-            html += '<tr>';
-            html += `<td><i class="fas fa-columns"></i> ${col}</td>`;
-            html += `<td><code>${dtype}</code></td>`;
-            html += `<td><i class="${icon}"></i> ${category}</td>`;
-            html += '</tr>';
-        }
+        Object.entries(data.dtypes).forEach(([col, dtype]) => {
+            html += `<tr>
+                <td><strong>${col}</strong></td>
+                <td><span class="dtype-badge">${dtype}</span></td>
+                <td>${data.memory_usage ? data.memory_usage[col] || 'N/A' : 'N/A'}</td>
+            </tr>`;
+        });
+        
         html += '</tbody></table></div></div>';
+    }
+    
+    // Outliers
+    if (data.outliers) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-bullseye"></i> Outlier Analysis</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Outlier Count</th><th>Outlier %</th><th>Method</th><th>Status</th></tr></thead><tbody>';
+        
+        Object.entries(data.outliers).forEach(([col, outlierData]) => {
+            if (outlierData && typeof outlierData === 'object') {
+                const count = outlierData.count || 0;
+                const percentage = ((count / data.total_rows) * 100).toFixed(2);
+                const method = outlierData.method || 'IQR';
+                
+                let statusClass = 'status-perfect';
+                let statusText = 'Perfect';
+                
+                if (percentage > 10) {
+                    statusClass = 'status-critical';
+                    statusText = 'Critical';
+                } else if (percentage > 5) {
+                    statusClass = 'status-warning';
+                    statusText = 'Warning';
+                } else if (percentage > 2) {
+                    statusClass = 'status-good';
+                    statusText = 'Good';
+                }
+                
+                html += `<tr>
+                    <td><strong>${col}</strong></td>
+                    <td>${count}</td>
+                    <td>${percentage}%</td>
+                    <td>${method}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                </tr>`;
+            }
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // Add outlier legend
+        html += '<div class="outlier-legend">';
+        html += '<p><strong>Outlier Detection Methods:</strong></p>';
+        html += '<ul>';
+        html += '<li><strong>IQR Method:</strong> Identifies outliers using the Interquartile Range (Q3 - Q1) × 1.5</li>';
+        html += '<li><strong>Z-Score Method:</strong> Identifies outliers using standard deviations from the mean</li>';
+        html += '<li><strong>Modified Z-Score:</strong> More robust version of Z-score using median and MAD</li>';
+        html += '</ul>';
+        html += '</div></div>';
+    }
+    
+    // Normality tests
+    if (data.normality_tests) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-chart-line"></i> Normality Tests</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="analysis-table">';
+        html += '<thead><tr><th>Column</th><th>Shapiro-Wilk p-value</th><th>Assessment</th><th>Interpretation</th></tr></thead><tbody>';
+        
+        Object.entries(data.normality_tests).forEach(([col, testData]) => {
+            if (testData && typeof testData === 'object') {
+                const pValue = testData.shapiro_wilk_p || testData.p_value || 'N/A';
+                let assessmentClass = 'assessment-non-normal';
+                let assessmentText = 'Non-Normal';
+                let interpretation = 'Data does not follow normal distribution';
+                
+                if (pValue !== 'N/A' && pValue > 0.05) {
+                    assessmentClass = 'assessment-normal';
+                    assessmentText = 'Normal';
+                    interpretation = 'Data follows normal distribution';
+                } else if (pValue !== 'N/A' && pValue > 0.01) {
+                    assessmentClass = 'assessment-moderate';
+                    assessmentText = 'Moderate';
+                    interpretation = 'Data may be approximately normal';
+                }
+                
+                html += `<tr>
+                    <td><strong>${col}</strong></td>
+                    <td>${pValue !== 'N/A' ? pValue.toFixed(6) : 'N/A'}</td>
+                    <td><span class="assessment-badge ${assessmentClass}">${assessmentText}</span></td>
+                    <td>${interpretation}</td>
+                </tr>`;
+            }
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // Add normality legend
+        html += '<div class="normality-legend">';
+        html += '<p><strong>Normality Test Interpretation:</strong></p>';
+        html += '<ul>';
+        html += '<li><strong>p-value > 0.05:</strong> Data is normally distributed (fail to reject null hypothesis)</li>';
+        html += '<li><strong>p-value ≤ 0.05:</strong> Data is not normally distributed (reject null hypothesis)</li>';
+        html += '<li><strong>Shapiro-Wilk Test:</strong> Most reliable test for normality, especially for small samples</li>';
+        html += '</ul>';
+        html += '</div></div>';
+    }
+    
+    // Correlations
+    if (data.correlations) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-project-diagram"></i> Correlation Analysis</h3>';
+        html += '<div class="table-container">';
+        html += '<table class="correlation-table">';
+        
+        // Header row
+        html += '<thead><tr><th>Column</th>';
+        Object.keys(data.correlations).forEach(col => {
+            html += `<th>${col}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        // Data rows
+        Object.entries(data.correlations).forEach(([rowCol, correlations]) => {
+            html += '<tr>';
+            html += `<td><strong>${rowCol}</strong></td>`;
+            Object.entries(correlations).forEach(([colCol, corrValue]) => {
+                if (rowCol === colCol) {
+                    html += '<td class="correlation-na">-</td>';
+                } else {
+                    const value = parseFloat(corrValue);
+                    let corrClass = 'correlation-weak';
+                    
+                    if (Math.abs(value) >= 0.8) {
+                        corrClass = 'correlation-perfect';
+                    } else if (Math.abs(value) >= 0.6) {
+                        corrClass = 'correlation-strong';
+                    } else if (Math.abs(value) >= 0.4) {
+                        corrClass = 'correlation-moderate';
+                    }
+                    
+                    if (value < 0) {
+                        corrClass += '-neg';
+                    }
+                    
+                    html += `<td class="${corrClass}">${value.toFixed(3)}</td>`;
+                }
+            });
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        
+        // Add correlation legend
+        html += '<div class="correlation-legend">';
+        html += '<div class="legend-item"><div class="legend-color perfect"></div><span>Perfect (≥0.8)</span></div>';
+        html += '<div class="legend-item"><div class="legend-color strong"></div><span>Strong (≥0.6)</span></div>';
+        html += '<div class="legend-item"><div class="legend-color moderate"></div><span>Moderate (≥0.4)</span></div>';
+        html += '<div class="legend-item"><div class="legend-color weak"></div><span>Weak (<0.4)</span></div>';
+        html += '</div></div>';
+    }
+    
+    // Unique values for categorical columns
+    if (data.unique_values) {
+        html += '<div class="analysis-section">';
+        html += '<h3><i class="fas fa-list"></i> Unique Values Analysis</h3>';
+        html += '<div class="unique-values-grid">';
+        
+        Object.entries(data.unique_values).forEach(([col, uniqueData]) => {
+            if (uniqueData && typeof uniqueData === 'object') {
+                const count = uniqueData.count || 0;
+                const values = uniqueData.values || [];
+                const percentage = ((count / data.total_rows) * 100).toFixed(2);
+                
+                html += '<div class="unique-value-item">';
+                html += `<h4>${col}</h4>`;
+                html += '<div class="unique-stats">';
+                html += `<div class="stat-item">Count: ${count}</div>`;
+                html += `<div class="stat-item">Percentage: ${percentage}%</div>`;
+                html += '</div>';
+                
+                if (values.length > 0) {
+                    html += '<div class="unique-values-list">';
+                    values.slice(0, 10).forEach(value => {
+                        html += `<span class="unique-value">${value}</span>`;
+                    });
+                    if (values.length > 10) {
+                        html += `<span class="unique-value">+${values.length - 10} more</span>`;
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+        });
+        
+        html += '</div></div>';
     }
     
     html += '</div>';
     content.innerHTML = html;
+    
+    // Show the cleaning recommendations button after analysis is complete
+    showCleaningRecommendationsButton();
 }
 
 // Close modal when clicking outside
@@ -2422,5 +2558,18 @@ window.onclick = function(event) {
     const modal = document.getElementById('cleaningModal');
     if (event.target === modal) {
         closeCleaningModal();
+    }
+}
+
+// Add this function to show the cleaning recommendations button
+function showCleaningRecommendationsButton() {
+    const buttonContainer = document.getElementById('cleaningRecommendationsContainer');
+    if (buttonContainer) {
+        buttonContainer.style.display = 'block';
+        buttonContainer.innerHTML = `
+            <button class="btn btn-primary" onclick="getCleaningRecommendations()">
+                <i class="fas fa-robot"></i> Get AI Data Cleaning Recommendations
+            </button>
+        `;
     }
 }

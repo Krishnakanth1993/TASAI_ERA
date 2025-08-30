@@ -16,7 +16,7 @@ class GeminiService:
         if not Config.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured")
         
-        # Configure Gemini API
+        # Configure Gemini API - Fixed indentation
         genai.configure(api_key=Config.GEMINI_API_KEY)
         self.model = genai.GenerativeModel(Config.GEMINI_MODEL)
         
@@ -92,6 +92,7 @@ Focus on:
 6. Statistical anomalies
 
 Provide practical, implementable recommendations that a data scientist can follow.
+Use bullet points and be concise.If possible use icons to make it more engaging.
 """
         return prompt
     
