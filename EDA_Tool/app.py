@@ -128,105 +128,184 @@ def get_data_info(df):
     }
     return convert_numpy_types(info)
 
+# Fix the statistics calculation functions
+
 def get_descriptive_stats(df):
     """Get descriptive statistics for numerical columns"""
-    numerical_cols = df.select_dtypes(include=[np.number])
-    if numerical_cols.empty:
+    try:
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) == 0:
+            return {}
+        
+        stats = df[numeric_cols].describe()
+        
+        # Convert to dictionary and handle NaN values
+        stats_dict = {}
+        for col in numeric_cols:
+            col_stats = {}
+            for metric in ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']:
+                value = stats.loc[metric, col]
+                if pd.isna(value):
+                    col_stats[metric] = 0 if metric == 'count' else 'N/A'
+                else:
+                    if metric == 'count':
+                        col_stats[metric] = int(value)
+                    else:
+                        col_stats[metric] = float(value)
+            stats_dict[col] = col_stats
+        
+        return stats_dict
+    except Exception as e:
+        print(f"Error in get_descriptive_stats: {e}")
         return {}
-    
-    stats_dict = {}
-    for col in numerical_cols.columns:
-        col_stats = df[col].describe()
-        stats_dict[col] = {
-            'count': col_stats['count'],
-            'mean': col_stats['mean'],
-            'std': col_stats['std'],
-            'min': col_stats['min'],
-            '25%': col_stats['25%'],
-            '50%': col_stats['50%'],
-            '75%': col_stats['75%'],
-            'max': col_stats['max'],
-            'skewness': df[col].skew(),
-            'kurtosis': df[col].kurtosis()
-        }
-    
-    return convert_numpy_types(stats_dict)
 
 def get_categorical_stats(df):
     """Get statistics for categorical columns"""
-    categorical_cols = df.select_dtypes(include=['object', 'category'])
-    if categorical_cols.empty:
+    try:
+        categorical_cols = df.select_dtypes(include=['object', 'string']).columns
+        stats = {}
+        
+        for col in categorical_cols:
+            col_stats = {}
+            col_stats['count'] = int(df[col].count())
+            col_stats['unique_count'] = int(df[col].nunique())
+            col_stats['missing_count'] = int(df[col].isnull().sum())
+            
+            # Calculate missing percentage safely
+            total_count = len(df)
+            if total_count > 0:
+                missing_percentage = (col_stats['missing_count'] / total_count) * 100
+                col_stats['missing_percentage'] = round(missing_percentage, 2)
+            else:
+                col_stats['missing_percentage'] = 0
+            
+            # Get unique values (limit to first 20)
+            unique_vals = df[col].dropna().unique()
+            col_stats['unique_values'] = unique_vals[:20].tolist()
+            
+            stats[col] = col_stats
+        
+        return stats
+    except Exception as e:
+        print(f"Error in get_categorical_stats: {e}")
         return {}
-    
-    stats_dict = {}
-    for col in categorical_cols.columns:
-        value_counts = df[col].value_counts()
-        stats_dict[col] = {
-            'unique_count': df[col].nunique(),
-            'most_common': value_counts.head(5).to_dict(),
-            'least_common': value_counts.tail(5).to_dict()
-        }
-    
-    return convert_numpy_types(stats_dict)
 
-def detect_outliers(df, method='iqr'):
+def detect_outliers(df):
     """Detect outliers using IQR method"""
     try:
-        outliers = {}
-        numerical_cols = df.select_dtypes(include=[np.number]).columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        outliers_data = {}
         
-        for col in numerical_cols:
-            col_data = df[col].dropna()
-            if len(col_data) > 0:
-                Q1 = col_data.quantile(0.25)
-                Q3 = col_data.quantile(0.75)
+        for col in numeric_cols:
+            try:
+                # Remove NaN values for calculation
+                clean_data = df[col].dropna()
+                if len(clean_data) < 4:  # Need at least 4 values for quartiles
+                    outliers_data[col] = {
+                        'count': 0,
+                        'method': 'IQR',
+                        'q1': 'N/A',
+                        'q3': 'N/A',
+                        'iqr': 'N/A',
+                        'lower_bound': 'N/A',
+                        'upper_bound': 'N/A',
+                        'outlier_percentage': 0
+                    }
+                    continue
+                
+                Q1 = float(clean_data.quantile(0.25))
+                Q3 = float(clean_data.quantile(0.75))
                 IQR = Q3 - Q1
                 lower_bound = Q1 - 1.5 * IQR
                 upper_bound = Q3 + 1.5 * IQR
                 
                 # Count outliers
-                outlier_mask = (col_data < lower_bound) | (col_data > upper_bound)
-                outlier_count = outlier_mask.sum()
+                outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)
+                outlier_count = int(outlier_mask.sum())
                 
-                outliers[col] = {
-                    'count': int(outlier_count),
-                    'lower_bound': float(lower_bound),
-                    'upper_bound': float(upper_bound),
-                    'Q1': float(Q1),
-                    'Q3': float(Q3),
-                    'IQR': float(IQR)
+                # Calculate percentage safely
+                total_count = len(df[col])
+                if total_count > 0:
+                    outlier_percentage = (outlier_count / total_count) * 100
+                else:
+                    outlier_percentage = 0
+                
+                outliers_data[col] = {
+                    'count': outlier_count,
+                    'method': 'IQR',
+                    'q1': round(Q1, 3),
+                    'q3': round(Q3, 3),
+                    'iqr': round(IQR, 3),
+                    'lower_bound': round(lower_bound, 3),
+                    'upper_bound': round(upper_bound, 3),
+                    'outlier_percentage': round(outlier_percentage, 2)
+                }
+                
+            except Exception as e:
+                print(f"Error processing outliers for {col}: {e}")
+                outliers_data[col] = {
+                    'count': 0,
+                    'method': 'IQR',
+                    'error': str(e)
                 }
         
-        return outliers
+        return outliers_data
     except Exception as e:
         print(f"Error in detect_outliers: {e}")
         return {}
 
 def run_normality_tests(df):
-    """Run normality tests using skewness and kurtosis"""
+    """Run normality tests on numerical columns"""
     try:
-        normality_results = {}
-        numerical_cols = df.select_dtypes(include=[np.number]).columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        normality_data = {}
         
-        for col in numerical_cols:
-            col_data = df[col].dropna()
-            if len(col_data) > 0:
+        for col in numeric_cols:
+            try:
+                # Remove NaN values for normality test
+                clean_data = df[col].dropna()
+                if len(clean_data) < 3:
+                    normality_data[col] = {
+                        'skewness': 'N/A',
+                        'kurtosis': 'N/A',
+                        'shapiro_wilk_p': 'N/A',
+                        'assessment': 'Insufficient data'
+                    }
+                    continue
+                
+                # Calculate skewness and kurtosis
+                skewness = float(clean_data.skew())
+                kurtosis = float(clean_data.kurtosis())
+                
+                # Shapiro-Wilk test
                 try:
-                    skewness = float(col_data.skew())
-                    kurtosis = float(col_data.kurtosis())
-                    
-                    normality_results[col] = {
-                        'skewness': skewness,
-                        'kurtosis': kurtosis
-                    }
-                except Exception as e:
-                    print(f"Error calculating normality for {col}: {e}")
-                    normality_results[col] = {
-                        'skewness': None,
-                        'kurtosis': None
-                    }
+                    shapiro_stat, shapiro_p = stats.shapiro(clean_data)
+                    shapiro_p = float(shapiro_p)
+                except:
+                    shapiro_p = 'N/A'
+                
+                # Normality assessment
+                if shapiro_p != 'N/A' and shapiro_p > 0.05:
+                    assessment = 'Normal'
+                elif abs(skewness) > 1 or abs(kurtosis) > 2:
+                    assessment = 'Non-Normal'
+                elif abs(skewness) > 0.5 or abs(kurtosis) > 1:
+                    assessment = 'Moderately Skewed'
+                else:
+                    assessment = 'Approximately Normal'
+                
+                normality_data[col] = {
+                    'skewness': round(skewness, 3),
+                    'kurtosis': round(kurtosis, 3),
+                    'shapiro_wilk_p': shapiro_p if shapiro_p == 'N/A' else round(shapiro_p, 6),
+                    'assessment': assessment
+                }
+                
+            except Exception as e:
+                print(f"Error processing normality test for {col}: {e}")
+                normality_data[col] = {'error': str(e)}
         
-        return normality_results
+        return normality_data
     except Exception as e:
         print(f"Error in run_normality_tests: {e}")
         return {}
@@ -234,43 +313,26 @@ def run_normality_tests(df):
 def get_correlations(df):
     """Get correlation matrix for numerical columns"""
     try:
-        numerical_cols = df.select_dtypes(include=[np.number]).columns
-        if len(numerical_cols) > 1:
-            corr_matrix = df[numerical_cols].corr()
-            # Convert to serializable format
-            correlations = {}
-            for i, col1 in enumerate(numerical_cols):
-                correlations[col1] = {}
-                for j, col2 in enumerate(numerical_cols):
-                    corr_val = corr_matrix.iloc[i, j]
-                    correlations[col1][col2] = float(corr_val) if not pd.isna(corr_val) else None
-            return correlations
-        else:
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) < 2:
             return {}
-    except Exception as e:
-        print(f"Error calculating correlations: {e}")
-        return {}
-
-def get_categorical_stats(df):
-    """Get statistics for categorical columns"""
-    try:
-        categorical_stats = {}
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
         
-        for col in categorical_cols:
-            col_data = df[col].dropna()
-            if len(col_data) > 0:
-                value_counts = col_data.value_counts()
-                categorical_stats[col] = {
-                    'unique_count': int(value_counts.nunique()),
-                    'most_common': value_counts.index[0] if len(value_counts) > 0 else None,
-                    'most_common_count': int(value_counts.iloc[0]) if len(value_counts) > 0 else 0,
-                    'total_count': int(len(col_data))
-                }
+        corr_matrix = df[numeric_cols].corr()
         
-        return categorical_stats
+        # Convert to dictionary and handle NaN values
+        correlations = {}
+        for col1 in numeric_cols:
+            correlations[col1] = {}
+            for col2 in numeric_cols:
+                value = corr_matrix.loc[col1, col2]
+                if pd.isna(value):
+                    correlations[col1][col2] = 0.0
+                else:
+                    correlations[col1][col2] = round(float(value), 3)
+        
+        return correlations
     except Exception as e:
-        print(f"Error in get_categorical_stats: {e}")
+        print(f"Error in get_correlations: {e}")
         return {}
 
 def create_histogram(df, column, bins=30):
@@ -413,20 +475,26 @@ def analyze_data():
             if df[col].dtype == 'bool':
                 df[col] = df[col].astype(str)
         
-        # Get all the analysis results
+        # Get all the analysis results using the older structure
         analysis_results = {}
         
         # Basic statistics
         analysis_results['basic_stats'] = get_descriptive_stats(df)
         
-        # Categorical statistics
-        analysis_results['categorical_stats'] = get_categorical_stats(df)
+        # Data types
+        analysis_results['dtypes'] = {col: str(dtype) for col, dtype in df.dtypes.items()}
         
         # Missing values
         analysis_results['missing_values'] = df.isnull().sum().to_dict()
         
-        # Data types
-        analysis_results['dtypes'] = {col: str(dtype) for col, dtype in df.dtypes.items()}
+        # Numerical analysis (for outliers and normality)
+        numerical_cols = df.select_dtypes(include=[np.number]).columns
+        analysis_results['numerical_analysis'] = {}
+        for col in numerical_cols:
+            analysis_results['numerical_analysis'][col] = {
+                'skewness': float(df[col].skew()) if len(df[col].dropna()) > 0 else 0,
+                'kurtosis': float(df[col].kurtosis()) if len(df[col].dropna()) > 0 else 0
+            }
         
         # Outliers
         analysis_results['outliers'] = detect_outliers(df)
@@ -435,7 +503,18 @@ def analyze_data():
         analysis_results['normality_tests'] = run_normality_tests(df)
         
         # Correlations
-        analysis_results['correlations'] = get_correlations(df)
+        analysis_results['correlation'] = get_correlations(df)
+        
+        # Unique values
+        analysis_results['unique_values'] = {}
+        for col in df.columns:
+            if df[col].dtype == 'object' or df[col].dtype == 'string':
+                unique_vals = df[col].dropna().unique()
+                analysis_results['unique_values'][col] = unique_vals[:20].tolist()
+        
+        # Preview data (head and tail)
+        analysis_results['preview_head'] = df.head(10).to_dict('records')
+        analysis_results['preview_tail'] = df.tail(10).to_dict('records')
         
         # Store the complete analysis results in session
         session['analysis_results'] = analysis_results
