@@ -1,4 +1,5 @@
 // Global variables
+// Global variables
 let currentData = null;
 let currentColumns = [];
 let currentDataView = 'head'; // Track current data view
@@ -693,43 +694,17 @@ function displayAnalysisResults(data) {
         `;
     }
     
-    // Data Types Section - Tabular Format
-    if (data.dtypes) {
+    // Missing Values Section - Merged with Data Types
+    if (data.missing_values) {
         html += `
             <div class="analysis-section">
-                <h3><i class="fas fa-cogs"></i> Data Types</h3>
+                <h3><i class="fas fa-exclamation-triangle"></i> Missing Values & Data Types</h3>
                 <div class="table-container">
                     <table class="analysis-table">
                         <thead>
                             <tr>
                                 <th>Column</th>
                                 <th>Data Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(data.dtypes).map(column => `
-                                <tr>
-                                    <td><strong>${column}</strong></td>
-                                    <td><span class="dtype-badge">${data.dtypes[column]}</span></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Missing Values Section - Tabular Format
-    if (data.missing_values) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-exclamation-triangle"></i> Missing Values</h3>
-                <div class="table-container">
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Column</th>
                                 <th>Missing Count</th>
                                 <th>Missing Percentage</th>
                                 <th>Status</th>
@@ -743,9 +718,13 @@ function displayAnalysisResults(data) {
                                 const status = missingPercentage == 0 ? 'Perfect' : missingPercentage < 5 ? 'Good' : missingPercentage < 20 ? 'Warning' : 'Critical';
                                 const statusClass = status === 'Perfect' ? 'status-perfect' : status === 'Good' ? 'status-good' : status === 'Warning' ? 'status-warning' : 'status-critical';
                                 
+                                // Get data type from dtypes if available
+                                const dataType = data.dtypes?.[column] || 'Unknown';
+                                
                                 return `
                                     <tr>
                                         <td><strong>${column}</strong></td>
+                                        <td><span class="dtype-badge">${dataType}</span></td>
                                         <td>${missingCount}</td>
                                         <td>${missingPercentage}%</td>
                                         <td><span class="status-badge ${statusClass}">${status}</span></td>
@@ -1421,18 +1400,6 @@ function generateReportHTMLForPreview(title, description) {
             <p><strong>Missing Values:</strong> ${Object.values(dataInfo.null_counts).reduce((sum, count) => sum + count, 0)}</p>
             <p><strong>Duplicate Rows:</strong> ${dataInfo.duplicate_rows}</p>
             
-            <h2>Data Types</h2>
-            <table>
-                <thead>
-                    <tr><th>Column</th><th>Data Type</th></tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(dataInfo.dtypes).map(([col, dtype]) => 
-                        `<tr><td>${col}</td><td>${dtype}</td></tr>`
-                    ).join('')}
-                </tbody>
-            </table>
-            
             <h2>Missing Values Analysis</h2>
             <table>
                 <thead>
@@ -1953,18 +1920,6 @@ function generateReportHTML(title, description) {
             <p><strong>Missing Values:</strong> ${Object.values(dataInfo.null_counts).reduce((sum, count) => sum + count, 0)}</p>
             <p><strong>Duplicate Rows:</strong> ${dataInfo.duplicate_rows}</p>
             
-            <h2>Data Types</h2>
-            <table>
-                <thead>
-                    <tr><th>Column</th><th>Data Type</th></tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(dataInfo.dtypes).map(([col, dtype]) => 
-                        `<tr><td>${col}</td><td>${dtype}</td></tr>`
-                    ).join('')}
-                </tbody>
-            </table>
-            
             <h2>Missing Values Analysis</h2>
             <table>
                 <thead>
@@ -2370,43 +2325,17 @@ function displayAnalysisResults(data) {
         `;
     }
     
-    // Data Types Section - Tabular Format
-    if (data.dtypes) {
+    // Missing Values Section - Merged with Data Types
+    if (data.missing_values) {
         html += `
             <div class="analysis-section">
-                <h3><i class="fas fa-cogs"></i> Data Types</h3>
+                <h3><i class="fas fa-exclamation-triangle"></i> Missing Values & Data Types</h3>
                 <div class="table-container">
                     <table class="analysis-table">
                         <thead>
                             <tr>
                                 <th>Column</th>
                                 <th>Data Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(data.dtypes).map(column => `
-                                <tr>
-                                    <td><strong>${column}</strong></td>
-                                    <td><span class="dtype-badge">${data.dtypes[column]}</span></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Missing Values Section - Tabular Format
-    if (data.missing_values) {
-        html += `
-            <div class="analysis-section">
-                <h3><i class="fas fa-exclamation-triangle"></i> Missing Values</h3>
-                <div class="table-container">
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Column</th>
                                 <th>Missing Count</th>
                                 <th>Missing Percentage</th>
                                 <th>Status</th>
@@ -2420,9 +2349,13 @@ function displayAnalysisResults(data) {
                                 const status = missingPercentage == 0 ? 'Perfect' : missingPercentage < 5 ? 'Good' : missingPercentage < 20 ? 'Warning' : 'Critical';
                                 const statusClass = status === 'Perfect' ? 'status-perfect' : status === 'Good' ? 'status-good' : status === 'Warning' ? 'status-warning' : 'status-critical';
                                 
+                                // Get data type from dtypes if available
+                                const dataType = data.dtypes?.[column] || 'Unknown';
+                                
                                 return `
                                     <tr>
                                         <td><strong>${column}</strong></td>
+                                        <td><span class="dtype-badge">${dataType}</span></td>
                                         <td>${missingCount}</td>
                                         <td>${missingPercentage}%</td>
                                         <td><span class="status-badge ${statusClass}">${status}</span></td>
