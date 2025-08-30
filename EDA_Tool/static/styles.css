@@ -1934,8 +1934,21 @@ body {
 
 .modal-header h3 {
     margin: 0;
-    font-size: 1.5rem;
+    color: white !important; /* Force white color */
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 600;
+}
+
+.modal-header h3 i {
+    color: white !important; /* Force white color for icon */
+}
+
+/* Ensure the heading text is also white */
+.modal-header h3,
+.modal-header h3 * {
+    color: white !important;
 }
 
 .close {
@@ -3319,5 +3332,79 @@ body {
 
 .legend-color.non-normal {
     background: #ef4444;
+}
+
+/* Add CSS for modal controls and minimized state */
+
+/* Modal Controls */
+.modal-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.modal-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.minimize-btn {
+    color: var(--text-secondary);
+}
+
+.minimize-btn:hover {
+    color: var(--primary-color);
+}
+
+/* Minimized Modal State */
+.modal.minimized {
+    transform: scale(0.8);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.modal.minimized .modal-content {
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+/* Modal Header Layout */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-controls {
+        gap: 5px;
+    }
+    
+    .modal-btn {
+        padding: 6px;
+        font-size: 12px;
+    }
 }
 

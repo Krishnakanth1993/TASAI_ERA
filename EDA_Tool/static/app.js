@@ -2958,3 +2958,45 @@ function getPriorityIcon(priority) {
         default: return 'fas fa-minus';
     }
 }
+
+// Add this function to handle modal minimization
+
+// Function to minimize the cleaning modal
+function minimizeCleaningModal() {
+    console.log('=== minimizeCleaningModal called ===');
+    const modal = document.getElementById('cleaningModal');
+    if (modal) {
+        // Add minimized class
+        modal.classList.add('minimized');
+        
+        // Update minimize button to show restore icon
+        const minimizeBtn = modal.querySelector('.minimize-btn');
+        if (minimizeBtn) {
+            minimizeBtn.innerHTML = '<i class="fas fa-window-restore"></i>';
+            minimizeBtn.onclick = restoreCleaningModal;
+            minimizeBtn.title = 'Restore';
+        }
+        
+        console.log('Modal minimized');
+    }
+}
+
+// Function to restore the minimized modal
+function restoreCleaningModal() {
+    console.log('=== restoreCleaningModal called ===');
+    const modal = document.getElementById('cleaningModal');
+    if (modal) {
+        // Remove minimized class
+        modal.classList.remove('minimized');
+        
+        // Update restore button to show minimize icon
+        const restoreBtn = modal.querySelector('.minimize-btn');
+        if (restoreBtn) {
+            restoreBtn.innerHTML = '<i class="fas fa-minus"></i>';
+            restoreBtn.onclick = minimizeCleaningModal;
+            restoreBtn.title = 'Minimize';
+        }
+        
+        console.log('Modal restored');
+    }
+}
