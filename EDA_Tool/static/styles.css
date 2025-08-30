@@ -2068,3 +2068,1170 @@ body {
     opacity: 0.9;
 }   
 
+/* Add these styles for the enhanced Gemini recommendations */
+
+/* Gemini Recommendations Container */
+.gemini-recommendations {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Quality Score Header */
+.quality-score-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 25px var(--shadow-color);
+}
+
+.quality-score-header.score-excellent {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.quality-score-header.score-good {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.quality-score-header.score-fair {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.quality-score-header.score-poor {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.score-icon {
+    font-size: 3rem;
+    opacity: 0.9;
+}
+
+.score-content h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.score-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.score-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Recommendation Sections */
+.recommendation-section {
+    margin-bottom: 35px;
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 8px 25px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.section-title.critical {
+    color: var(--error-color);
+}
+
+.section-content {
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+/* Parsed Content Styling */
+.parsed-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.content-card {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.content-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px var(--shadow-color);
+    border-color: var(--primary-color);
+}
+
+.content-icon {
+    font-size: 1.5rem;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    color: var(--primary-color);
+}
+
+.content-body {
+    flex: 1;
+}
+
+.content-title {
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.content-text {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.8;
+    text-align: justify;
+}
+
+/* Issues Grid */
+.issues-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.issue-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid;
+}
+
+.issue-card.severity-high {
+    border-left-color: var(--error-color);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.1));
+}
+
+.issue-card.severity-medium {
+    border-left-color: var(--warning-color);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(245, 158, 11, 0.1));
+}
+
+.issue-card.severity-low {
+    border-left-color: var(--success-color);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(16, 185, 129, 0.1));
+}
+
+.issue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.severity-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.severity-badge.severity-high {
+    background: var(--error-color);
+    color: white;
+}
+
+.severity-badge.severity-medium {
+    background: var(--warning-color);
+    color: white;
+}
+
+.severity-badge.severity-low {
+    background: var(--success-color);
+    color: white;
+}
+
+.issue-number {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.issue-title {
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.issue-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.detail-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.detail-item span {
+    line-height: 1.7;
+}
+
+/* Cleaning Steps */
+.cleaning-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+.cleaning-step {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid;
+    width: 100% !important;
+    box-sizing: border-box;
+    overflow: visible !important;
+    word-wrap: break-word !important;
+}
+
+.cleaning-step.priority-high {
+    border-left-color: var(--error-color);
+}
+
+.cleaning-step.priority-medium {
+    border-left-color: var(--warning-color);
+}
+
+.cleaning-step.priority-low {
+    border-left-color: var(--success-color);
+}
+
+/* Step header - Better layout */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100% !important;
+}
+
+.step-number {
+    background: var(--primary-color);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.priority-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.priority-badge.priority-high {
+    background: var(--error-color);
+    color: white;
+}
+
+.priority-badge.priority-medium {
+    background: var(--warning-color);
+    color: white;
+}
+
+.priority-badge.priority-low {
+    background: var(--success-color);
+    color: white;
+}
+
+/* Step action - This is the missing header! */
+.step-action {
+    color: var(--text-primary);
+    margin: 0 0 15px 0; /* Remove top margin, keep bottom margin */
+    font-size: 1.1rem !important; /* Make it slightly larger */
+    font-weight: 600;
+    line-height: 1.4;
+    width: 100% !important; /* Remove any padding */
+    word-wrap: break-word !important; /* Remove any borders */
+    overflow-wrap: break-word !important; /* Remove any background */
+    visibility: visible !important; /* Remove any margins */
+    opacity: 1 !important; /* Remove any margins */
+}
+
+/* Step content - Container for all content below the heading */
+.step-content {
+    width: 100%;
+    margin-top: 0; /* Remove top margin */
+}
+
+/* Step details - Full width */
+.step-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100% !important;
+    word-wrap: break-word !important;
+}
+
+/* Detail items - Better text handling */
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    width: 100% !important;
+    word-wrap: break-word !important;
+}
+
+.detail-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    word-wrap: break-word !important;
+}
+
+.detail-item span {
+    line-height: 1.6;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Columns list - Better layout */
+.columns-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+    width: 100% !important;
+}
+
+.column-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Content card animations */
+.content-card {
+    animation: fadeInUp 0.5s ease forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.content-card:nth-child(1) { animation-delay: 0.1s; }
+.content-card:nth-child(2) { animation-delay: 0.2s; }
+.content-card:nth-child(3) { animation-delay: 0.3s; }
+.content-card:nth-child(4) { animation-delay: 0.4s; }
+.content-card:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .content-card {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .content-icon {
+        align-self: flex-start;
+    }
+    
+    .parsed-content {
+        gap: 15px;
+    }
+}
+
+/* Fix the Cleaning Steps section styling */
+
+/* Section Titles - Better sizing and containment */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 1.2rem; /* Reduced from 1.3rem */
+    font-weight: 600;
+    color: var(--primary-color);
+    word-wrap: break-word !important; /* Prevent text overflow */
+    overflow-wrap: break-word !important;
+    hyphens: auto;
+}
+
+.section-title.critical {
+    color: var(--error-color);
+}
+
+/* Section content - Better spacing and containment */
+.section-content {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    width: 100% !important; /* Ensure full width */
+    overflow: visible !important; /* Prevent content overflow */
+}
+
+/* Cleaning Steps - Improved layout and spacing */
+.cleaning-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100% !important; /* Ensure full width */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.step-item {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid;
+    width: 100% !important; /* Ensure full width */
+    box-sizing: border-box; /* Include padding in width calculation */
+    overflow: visible !important; /* Prevent content overflow */
+    word-wrap: break-word !important; /* Prevent text overflow */
+}
+
+/* Step header - Better alignment and spacing */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 10px; /* Add gap between elements */
+    width: 100% !important; /* Ensure full width */
+}
+
+.step-number {
+    background: var(--primary-color);
+    color: white;
+    width: 28px; /* Slightly smaller */
+    height: 28px; /* Slightly smaller */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem; /* Smaller font */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.priority-badge {
+    padding: 4px 10px; /* Reduced padding */
+    border-radius: 20px;
+    font-size: 0.75rem; /* Smaller font */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0; /* Prevent shrinking */
+    white-space: nowrap; /* Prevent badge text wrapping */
+}
+
+.priority-badge.priority-high {
+    background: var(--error-color);
+    color: white;
+}
+
+.priority-badge.priority-medium {
+    background: var(--warning-color);
+    color: white;
+}
+
+.priority-badge.priority-low {
+    background: var(--success-color);
+    color: white;
+}
+
+/* Step action - Better sizing and containment */
+.step-action {
+    color: var(--text-primary);
+    margin: 0 0 15px 0; /* Remove top margin, keep bottom margin */
+    font-size: 1.1rem !important; /* Make it slightly larger */
+    font-weight: 600;
+    line-height: 1.4;
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0; /* Remove any padding */
+    border: none; /* Remove any borders */
+    background: none; /* Remove any background */
+}
+
+/* Step content - Container for all content below the heading */
+.step-content {
+    width: 100%;
+    margin-top: 0; /* Remove top margin */
+}
+
+/* Step details - Full width */
+.step-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100% !important;
+    word-wrap: break-word !important;
+}
+
+/* Detail items - Better text handling */
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    width: 100% !important;
+    word-wrap: break-word !important;
+}
+
+.detail-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    word-wrap: break-word !important;
+}
+
+.detail-item span {
+    line-height: 1.6;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Columns list - Better layout */
+.columns-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px; /* Reduced gap */
+    margin-top: 5px;
+    width: 100% !important; /* Ensure full width */
+}
+
+.column-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 3px 6px; /* Reduced padding */
+    border-radius: 4px; /* Smaller radius */
+    font-size: 0.75rem; /* Smaller font */
+    font-weight: 500;
+    white-space: nowrap; /* Prevent tag text wrapping */
+}
+
+/* Recommendation sections - Better containment */
+.recommendation-section {
+    margin-bottom: 35px;
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 20px; /* Reduced from 25px */
+    box-shadow: 0 8px 25px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    overflow: visible !important; /* Prevent content overflow */
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .section-title {
+        font-size: 1.1rem; /* Even smaller on mobile */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .step-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .step-item {
+        padding: 15px; /* Reduced padding on mobile */
+    }
+    
+    .step-action {
+        font-size: 0.95rem; /* Smaller on mobile */
+    }
+    
+    .recommendation-section {
+        padding: 15px; /* Reduced padding on mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .section-title {
+        font-size: 1rem; /* Smallest on very small screens */
+    }
+    
+    .step-item {
+        padding: 12px; /* Minimal padding on very small screens */
+    }
+    
+    .step-action {
+        font-size: 0.9rem; /* Smallest font on very small screens */
+    }
+}
+
+/* Fix the text overflow issues in the Cleaning Steps section */
+
+/* Modal content - Ensure full width */
+#cleaningRecommendations {
+    width: 100% !important;
+    max-width: none !important;
+    overflow-x: auto !important; /* Changed from hidden to auto */
+}
+
+/* Gemini recommendations container - Full width */
+.gemini-recommendations {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Recommendation sections - Full width and proper padding */
+.recommendation-section {
+    margin-bottom: 35px;
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 25px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    width: 100% !important;
+    box-sizing: border-box;
+    overflow: visible !important;
+}
+
+/* Section titles - Restore visibility with proper sizing */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 1.2rem !important; /* Restore reasonable font size */
+    font-weight: 600;
+    color: var(--primary-color);
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.3;
+    flex-wrap: wrap;
+    visibility: visible !important; /* Ensure visibility */
+    opacity: 1 !important; /* Ensure opacity */
+}
+
+.section-title.critical {
+    color: var(--error-color);
+}
+
+/* Section content - Full width */
+.section-content {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    width: 100% !important;
+    overflow: visible !important;
+}
+
+/* Cleaning Steps - Full width container */
+.cleaning-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Step items - Full width and proper text handling */
+.step-item {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid;
+    width: 100% !important;
+    box-sizing: border-box;
+    overflow: visible !important;
+    word-wrap: break-word !important;
+}
+
+/* Step header - Better layout */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100% !important;
+}
+
+.step-number {
+    background: var(--primary-color);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.priority-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.priority-badge.priority-high {
+    background: var(--error-color);
+    color: white;
+}
+
+.priority-badge.priority-medium {
+    background: var(--warning-color);
+    color: white;
+}
+
+.priority-badge.priority-low {
+    background: var(--success-color);
+    color: white;
+}
+
+/* Step action - Proper sizing and text wrapping */
+.step-action {
+    color: var(--text-primary);
+    margin: 0 0 15px 0; /* Remove top margin, keep bottom margin */
+    font-size: 1.1rem !important; /* Make it slightly larger */
+    font-weight: 600;
+    line-height: 1.4;
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0; /* Remove any padding */
+    border: none; /* Remove any borders */
+    background: none; /* Remove any background */
+}
+
+/* Step content - Container for all content below the heading */
+.step-content {
+    width: 100%;
+    margin-top: 0; /* Remove top margin */
+}
+
+/* Step details - Full width */
+.step-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100% !important;
+    word-wrap: break-word !important;
+}
+
+/* Detail items - Better text handling */
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    width: 100% !important;
+    word-wrap: break-word !important;
+}
+
+.detail-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    word-wrap: break-word !important;
+}
+
+.detail-item span {
+    line-height: 1.6;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Columns list - Better layout */
+.columns-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+    width: 100% !important;
+}
+
+.column-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Modal width fixes */
+.modal-content {
+    width: 90vw !important;
+    max-width: 1200px !important;
+    margin: 0 auto;
+}
+
+/* Remove the aggressive global text wrapping that was hiding content */
+/* Only apply text wrapping to specific elements that need it */
+.step-action, .issue-title, .content-title {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+}
+
+/* Responsive fixes */
+@media (max-width: 1200px) {
+    .modal-content {
+        width: 95vw !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 98vw !important;
+        margin: 10px;
+    }
+    
+    .section-title {
+        font-size: 1.1rem !important;
+    }
+    
+    .step-action {
+        font-size: 0.95rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        width: 100vw !important;
+        margin: 5px;
+    }
+    
+    .section-title {
+        font-size: 1rem !important;
+    }
+    
+    .step-action {
+        font-size: 0.9rem !important;
+    }
+}
+
+/* Increase font size for step header h5 elements */
+
+/* Step action - Make the h5 heading larger and more prominent */
+.step-action {
+    color: var(--text-primary);
+    margin: 0 0 15px 0;
+    font-size: 1.3rem !important; /* Increased from 1.1rem to 1.3rem */
+    font-weight: 600;
+    line-height: 1.4;
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* Alternative: If you want to target h5 elements specifically */
+.cleaning-step h5 {
+    color: var(--text-primary);
+    margin: 0 0 15px 0;
+    font-size: 1.3rem !important; /* Increased font size */
+    font-weight: 600;
+    line-height: 1.4;
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* Make sure the step action stands out even more */
+.step-action, .cleaning-step h5 {
+    font-family: inherit;
+    text-transform: none;
+    letter-spacing: normal;
+    text-decoration: none;
+    display: block;
+    clear: both;
+    /* Add a subtle text shadow for better readability */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive font sizing */
+@media (max-width: 768px) {
+    .step-action, .cleaning-step h5 {
+        font-size: 1.2rem !important; /* Slightly smaller on mobile but still larger than before */
+    }
+}
+
+@media (max-width: 480px) {
+    .step-action, .cleaning-step h5 {
+        font-size: 1.1rem !important; /* Maintain readability on very small screens */
+    }
+}
+
+/* Update the step header to include all three elements horizontally */
+
+/* Step header - Horizontal layout with all elements */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 15px; /* Increased gap for better spacing */
+    width: 100% !important;
+    padding: 0;
+}
+
+/* Step number - Left side */
+.step-number {
+    background: var(--primary-color);
+    color: white;
+    width: 32px; /* Slightly larger */
+    height: 32px; /* Slightly larger */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem; /* Larger font */
+    flex-shrink: 0; /* Prevent shrinking */
+    order: 1; /* Ensure it's first */
+}
+
+/* Step action (h5) - Center, takes remaining space */
+.step-action {
+    color: var(--text-primary);
+    margin: 0; /* Remove all margins */
+    font-size: 1.3rem !important;
+    font-weight: 600;
+    line-height: 1.4;
+    flex: 1; /* Take remaining space */
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0;
+    border: none;
+    background: none;
+    order: 2; /* Ensure it's second */
+    text-align: left; /* Left align the text */
+    min-width: 0; /* Allow text to wrap */
+}
+
+/* Priority badge - Right side */
+.priority-badge {
+    padding: 6px 12px; /* Slightly larger padding */
+    border-radius: 20px;
+    font-size: 0.8rem; /* Slightly larger font */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0; /* Prevent shrinking */
+    white-space: nowrap;
+    order: 3; /* Ensure it's last */
+}
+
+.priority-badge.priority-high {
+    background: var(--error-color);
+    color: white;
+}
+
+.priority-badge.priority-medium {
+    background: var(--warning-color);
+    color: white;
+}
+
+.priority-badge.priority-low {
+    background: var(--success-color);
+    color: white;
+}
+
+/* Alternative: If you want to target h5 elements specifically */
+.cleaning-step h5 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1.3rem !important;
+    font-weight: 600;
+    line-height: 1.4;
+    flex: 1;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0;
+    border: none;
+    background: none;
+    order: 2;
+    text-align: left;
+    min-width: 0;
+}
+
+/* Enhanced styling for better visual hierarchy */
+.step-header {
+    background: rgba(255, 255, 255, 0.02); /* Subtle background */
+    padding: 12px 15px; /* Add padding to the header */
+    border-radius: 8px; /* Rounded corners */
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Subtle border */
+}
+
+/* Responsive design for the horizontal layout */
+@media (max-width: 768px) {
+    .step-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+    }
+    
+    .step-number {
+        order: 1;
+        align-self: flex-start;
+    }
+    
+    .step-action, .cleaning-step h5 {
+        order: 2;
+        font-size: 1.2rem !important;
+        width: 100%;
+        text-align: left;
+    }
+    
+    .priority-badge {
+        order: 3;
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .step-header {
+        padding: 8px 10px;
+    }
+    
+    .step-action, .cleaning-step h5 {
+        font-size: 1.1rem !important;
+    }
+    
+    .step-number {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+    
+    .priority-badge {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+}
+
+/* Ensure proper spacing between elements */
+.step-header > * {
+    margin: 0; /* Remove any default margins */
+}
+
+/* Add subtle hover effect to the header */
+.step-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+

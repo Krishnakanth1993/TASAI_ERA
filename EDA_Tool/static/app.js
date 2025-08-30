@@ -2184,9 +2184,10 @@ function displayCleaningRecommendations(recommendations) {
                 <div class="cleaning-step">
                     <div class="step-header">
                         <span class="step-number">${step.step}</span>
+                        <h5>${step.action}</h5>
                         <span class="priority-badge ${step.priority}">${step.priority}</span>
                     </div>
-                    <h5>${step.action}</h5>
+                    
                     <p><strong>Columns:</strong> ${step.columns.join(', ')}</p>
                     <p><strong>Method:</strong> ${step.method}</p>
                     <p><strong>Expected Outcome:</strong> ${step.expected_outcome}</p>
@@ -2593,5 +2594,293 @@ function showCleaningRecommendationsButton() {
                 <i class="fas fa-robot"></i> Get AI Data Cleaning Recommendations
             </button>
         `;
+    }
+}
+
+// Enhanced function to display Gemini recommendations with better formatting
+function displayGeminiRecommendations(recommendations) {
+    const modalContent = document.getElementById('cleaningRecommendations');
+    
+    if (!recommendations || typeof recommendations !== 'object') {
+        modalContent.innerHTML = `
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                No recommendations available. Please try again.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="gemini-recommendations">';
+    
+    // Data Quality Score Header
+    if (recommendations.data_quality_score) {
+        const score = recommendations.data_quality_score;
+        let scoreClass = 'score-excellent';
+        let scoreIcon = 'fas fa-star';
+        
+        if (score < 50) {
+            scoreClass = 'score-poor';
+            scoreIcon = 'fas fa-exclamation-triangle';
+        } else if (score < 70) {
+            scoreClass = 'score-fair';
+            scoreIcon = 'fas fa-exclamation-circle';
+        } else if (score < 90) {
+            scoreClass = 'score-good';
+            scoreIcon = 'fas fa-check-circle';
+        }
+        
+        html += `
+            <div class="quality-score-header ${scoreClass}">
+                <div class="score-icon">
+                    <i class="${scoreIcon}"></i>
+                </div>
+                <div class="score-content">
+                    <h3>Data Quality Assessment</h3>
+                    <div class="score-value">${score}/100</div>
+                    <div class="score-label">Overall Quality Score</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Executive Summary
+    if (recommendations.summary) {
+        html += `
+            <div class="recommendation-section">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Executive Summary
+                </h3>
+                <div class="section-content">
+                    ${parseAndFormatGeminiText(recommendations.summary)}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Critical Issues Section
+    if (recommendations.critical_issues && recommendations.critical_issues.length > 0) {
+        html += `
+            <div class="recommendation-section">
+                <h3 class="section-title critical">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Critical Issues Requiring Immediate Attention
+                </h3>
+                <div class="section-content">
+                    <div class="issues-grid">
+                        ${recommendations.critical_issues.map((issue, index) => {
+                            const severityClass = `severity-${issue.severity.toLowerCase()}`;
+                            const severityIcon = getSeverityIcon(issue.severity);
+                            
+                            return `
+                                <div class="issue-card ${severityClass}">
+                                    <div class="issue-header">
+                                        <span class="severity-badge ${severityClass}">
+                                            <i class="${severityIcon}"></i>
+                                            ${issue.severity.toUpperCase()}
+                                        </span>
+                                        <span class="issue-number">#${index + 1}</span>
+                                    </div>
+                                    <div class="issue-content">
+                                        <h4 class="issue-title">${issue.issue}</h4>
+                                        <div class="issue-details">
+                                            <div class="detail-item">
+                                                <strong>Impact:</strong>
+                                                <span>${parseAndFormatGeminiText(issue.impact)}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Recommendation:</strong>
+                                                <span>${parseAndFormatGeminiText(issue.recommendation)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Cleaning Steps Section
+    if (recommendations.cleaning_steps && recommendations.cleaning_steps.length > 0) {
+        html += `
+            <div class="recommendation-section">
+                <h3 class="section-title">
+                    <i class="fas fa-tools"></i>
+                    Recommended Cleaning Steps
+                </h3>
+                <div class="section-content">
+                    <div class="cleaning-steps">
+                        ${recommendations.cleaning_steps.map((step, index) => {
+                            const priorityClass = `priority-${step.priority.toLowerCase()}`;
+                            const priorityIcon = getPriorityIcon(step.priority);
+                            
+                            return `
+                                <div class="cleaning-step ${priorityClass}">
+                                    <div class="step-header">
+                                        <div class="step-number">${index + 1}</div>
+                                        <h5 class="step-action">${step.action}</h5>
+                                        <div class="step-priority">
+                                            <span class="priority-badge ${priorityClass}">
+                                                <i class="${priorityIcon}"></i>
+                                                ${step.priority.toUpperCase()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="step-content">
+                                        <div class="step-details">
+                                            ${step.columns && step.columns.length > 0 ? `
+                                                <div class="detail-item">
+                                                    <strong>Affected Columns:</strong>
+                                                    <div class="columns-list">
+                                                        ${step.columns.map(col => `<span class="column-tag">${col}</span>`).join('')}
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                            ${step.method ? `
+                                                <div class="detail-item">
+                                                    <strong>Method:</strong>
+                                                    <span>${parseAndFormatGeminiText(step.method)}</span>
+                                                </div>
+                                            ` : ''}
+                                            ${step.expected_outcome ? `
+                                                <div class="detail-item">
+                                                    <strong>Expected Outcome:</strong>
+                                                    <span>${parseAndFormatGeminiText(step.expected_outcome)}</span>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Next Steps Section
+    if (recommendations.next_steps) {
+        html += `
+            <div class="recommendation-section">
+                <h3 class="section-title">
+                    <i class="fas fa-arrow-right"></i>
+                    Next Steps After Cleaning
+                </h3>
+                <div class="section-content">
+                    ${parseAndFormatGeminiText(recommendations.next_steps)}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    modalContent.innerHTML = html;
+}
+
+// Enhanced function to parse and format Gemini text output with better readability
+function parseAndFormatGeminiText(text) {
+    if (!text || typeof text !== 'string') {
+        return '<p class="no-content">No content available</p>';
+    }
+    
+    // Split by bullet points and clean up
+    const sections = text.split(/\*\s+/).filter(section => section.trim().length > 0);
+    
+    if (sections.length === 0) {
+        // If no bullet points, try to split by other delimiters
+        return formatAsParagraphs(text);
+    }
+    
+    let html = '<div class="parsed-content">';
+    
+    sections.forEach((section, index) => {
+        if (section.trim().length === 0) return;
+        
+        // Extract emoji and title
+        const emojiMatch = section.match(/^([^\s]+)\s+(.+)/);
+        let emoji = '';
+        let title = '';
+        let content = '';
+        
+        if (emojiMatch) {
+            emoji = emojiMatch[1];
+            const remainingText = emojiMatch[2];
+            
+            // Find the first period or colon to separate title from content
+            const titleEndIndex = remainingText.search(/[.:]/);
+            if (titleEndIndex !== -1) {
+                title = remainingText.substring(0, titleEndIndex).trim();
+                content = remainingText.substring(titleEndIndex + 1).trim();
+            } else {
+                title = remainingText.trim();
+                content = '';
+            }
+        } else {
+            // No emoji found, treat as regular content
+            content = section.trim();
+        }
+        
+        // Clean up the content
+        content = content.replace(/^\s*[.:]\s*/, '').trim();
+        
+        if (title || content) {
+            html += `
+                <div class="content-card">
+                    ${emoji ? `<div class="content-icon">${emoji}</div>` : ''}
+                    <div class="content-body">
+                        ${title ? `<h4 class="content-title">${title}</h4>` : ''}
+                        ${content ? `<p class="content-text">${content}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// Fallback function for text without clear structure
+function formatAsParagraphs(text) {
+    // Split by double newlines or periods followed by space
+    const paragraphs = text.split(/(?<=\.)\s+/).filter(p => p.trim().length > 0);
+    
+    if (paragraphs.length === 0) {
+        return `<p class="content-text">${text}</p>`;
+    }
+    
+    return `
+        <div class="parsed-content">
+            ${paragraphs.map(paragraph => `
+                <div class="content-card">
+                    <p class="content-text">${paragraph.trim()}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Helper function to get severity icons
+function getSeverityIcon(severity) {
+    switch (severity.toLowerCase()) {
+        case 'high': return 'fas fa-exclamation-triangle';
+        case 'medium': return 'fas fa-exclamation-circle';
+        case 'low': return 'fas fa-info-circle';
+        default: return 'fas fa-info-circle';
+    }
+}
+
+// Helper function to get priority icons
+function getPriorityIcon(priority) {
+    switch (priority.toLowerCase()) {
+        case 'high': return 'fas fa-arrow-up';
+        case 'medium': return 'fas fa-minus';
+        case 'low': return 'fas fa-arrow-down';
+        default: return 'fas fa-minus';
     }
 }
