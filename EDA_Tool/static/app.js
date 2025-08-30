@@ -2214,25 +2214,25 @@ function displayCleaningRecommendations(recommendations) {
         html += `
             <div class="recommendation-section">
                 <h4><i class="fas fa-tools"></i> Recommended Cleaning Steps</h4>
-        `;
-        
-        recommendations.cleaning_steps.forEach(step => {
-            html += `
-                <div class="cleaning-step">
-                    <div class="step-header">
-                        <span class="step-number">${step.step}</span>
-                        <h5>${step.action}</h5>
-                        <span class="priority-badge ${step.priority}">${step.priority}</span>
-                    </div>
-                    
-                    <p><strong>Columns:</strong> ${step.columns.join(', ')}</p>
-                    <p><strong>Method:</strong> ${step.method}</p>
-                    <p><strong>Expected Outcome:</strong> ${step.expected_outcome}</p>
+                <div class="cleaning-steps-list">
+                    ${recommendations.cleaning_steps.map((step, index) => `
+                        <div class="cleaning-step">
+                            <div class="step-header">
+                                <h5 class="step-action">${step.step || (index + 1)}. ${step.action || 'No action specified'}</h5>
+                                <span class="priority-badge ${step.priority || 'medium'}">${(step.priority || 'medium').toUpperCase()}</span>
+                            </div>
+                            <div class="step-content">
+                                ${step.description ? `<p><strong>Description:</strong> ${step.description}</p>` : ''}
+                                ${step.columns && step.columns.length > 0 ? 
+                                    `<p><strong>Columns:</strong> ${step.columns.join(', ')}</p>` : ''}
+                                ${step.method ? `<p><strong>Method:</strong> ${step.method}</p>` : ''}
+                                ${step.expected_outcome ? `<p><strong>Expected Outcome:</strong> ${step.expected_outcome}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
-            `;
-        });
-        
-        html += '</div>';
+            </div>
+        `;
     }
     
     // Next steps
@@ -2787,50 +2787,22 @@ function displayGeminiRecommendations(recommendations) {
                     Recommended Cleaning Steps
                 </h3>
                 <div class="section-content">
-                    <div class="cleaning-steps">
-                        ${recommendations.cleaning_steps.map((step, index) => {
-                            const priorityClass = `priority-${step.priority.toLowerCase()}`;
-                            const priorityIcon = getPriorityIcon(step.priority);
-                            
-                            return `
-                                <div class="cleaning-step ${priorityClass}">
-                                    <div class="step-header">
-                                        <div class="step-number">${index + 1}</div>
-                                        <h5 class="step-action">${step.action}</h5>
-                                        <div class="step-priority">
-                                            <span class="priority-badge ${priorityClass}">
-                                                <i class="${priorityIcon}"></i>
-                                                ${step.priority.toUpperCase()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="step-content">
-                                        <div class="step-details">
-                                            ${step.columns && step.columns.length > 0 ? `
-                                                <div class="detail-item">
-                                                    <strong>Affected Columns:</strong>
-                                                    <div class="columns-list">
-                                                        ${step.columns.map(col => `<span class="column-tag">${col}</span>`).join('')}
-                                                    </div>
-                                                </div>
-                                            ` : ''}
-                                            ${step.method ? `
-                                                <div class="detail-item">
-                                                    <strong>Method:</strong>
-                                                    <span>${parseAndFormatGeminiText(step.method)}</span>
-                                                </div>
-                                            ` : ''}
-                                            ${step.expected_outcome ? `
-                                                <div class="detail-item">
-                                                    <strong>Expected Outcome:</strong>
-                                                    <span>${parseAndFormatGeminiText(step.expected_outcome)}</span>
-                                                </div>
-                                            ` : ''}
-                                        </div>
-                                    </div>
+                    <div class="cleaning-steps-list">
+                        ${recommendations.cleaning_steps.map((step, index) => `
+                            <div class="cleaning-step">
+                                <div class="step-header">
+                                    <h5 class="step-action">${step.step || (index + 1)}. ${step.action || 'No action specified'}</h5>
+                                    <span class="priority-badge ${step.priority || 'medium'}">${(step.priority || 'medium').toUpperCase()}</span>
                                 </div>
-                            `;
-                        }).join('')}
+                                <div class="step-content">
+                                    ${step.description ? `<p><strong>Description:</strong> ${step.description}</p>` : ''}
+                                    ${step.columns && step.columns.length > 0 ? 
+                                        `<p><strong>Columns:</strong> ${step.columns.join(', ')}</p>` : ''}
+                                    ${step.method ? `<p><strong>Method:</strong> ${step.method}</p>` : ''}
+                                    ${step.expected_outcome ? `<p><strong>Expected Outcome:</strong> ${step.expected_outcome}</p>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             </div>
