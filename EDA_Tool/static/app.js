@@ -2943,27 +2943,115 @@ function displayCleaningRecommendationsModal(data) {
         console.log('=== displayCleaningRecommendationsModal called ===');
         console.log('Data received:', data);
         
-        // Get the existing modal elements
-        const modal = document.getElementById('cleaningModal');
-        const content = document.getElementById('cleaningRecommendations');
-        const loading = document.getElementById('cleaningLoading');
-        
-        if (!modal || !content) {
-            console.error('Modal elements not found');
-            return;
+        // First, remove any existing modals
+        const existingModal = document.getElementById('cleaningModal');
+        if (existingModal) {
+            console.log('Removing existing modal before creating new one');
+            existingModal.remove();
         }
         
-        // Populate the content with recommendations data
-        content.innerHTML = generateModalContentDirectly(data);
+        // Create modal HTML with proper positioning
+        const modalHTML = `
+            <div id="cleaningModal" class="modal" style="
+                display: flex !important; 
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background-color: rgba(0, 0, 0, 0.8) !important;
+                z-index: 999999 !important;
+                align-items: center !important;
+                justify-content: center !important;
+                overflow: hidden !important;
+            ">
+                <div class="modal-content" style="
+                    background: var(--bg-card) !important;
+                    border-radius: 15px !important;
+                    max-width: 90vw !important;
+                    max-height: 90vh !important;
+                    width: 800px !important;
+                    overflow-y: auto !important;
+                    position: relative !important;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+                ">
+                    <div class="modal-header" style="
+                        background: var(--bg-tertiary) !important;
+                        padding: 20px !important;
+                        border-radius: 15px 15px 0 0 !important;
+                        display: flex !important;
+                        justify-content: space-between !important;
+                        align-items: center !important;
+                        border-bottom: 1px solid var(--border-color) !important;
+                    ">
+                        <h3 style="color: white !important; margin: 0; font-size: 1.3rem;">
+                            <i class="fas fa-robot" style="color: white !important;"></i> AI Data Cleaning Recommendations
+                        </h3>
+                        <div class="modal-controls">
+                            <button class="modal-btn minimize-btn" onclick="minimizeCleaningModal()" title="Minimize">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span class="close" onclick="closeCleaningModal()" title="Close" style="
+                                color: #aaa !important;
+                                font-size: 28px !important;
+                                font-weight: bold !important;
+                                cursor: pointer !important;
+                                transition: color 0.3s !important;
+                            ">&times;</span>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-body" style="padding: 20px !important; max-height: 60vh !important; overflow-y: auto !important;">
+                        <div class="cleaning-recommendations-content">
+                            ${generateModalContentDirectly(data)}
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer" style="
+                        padding: 20px !important;
+                        border-top: 1px solid var(--border-color) !important;
+                        display: flex !important;
+                        justify-content: flex-end !important;
+                        gap: 10px !important;
+                    ">
+                        <button class="btn btn-secondary" onclick="closeCleaningModal()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
         
-        // Hide loading, show content
-        if (loading) loading.style.display = 'none';
-        content.style.display = 'block';
+        console.log('Modal HTML created, length:', modalHTML.length);
         
-        // Show the modal
-        modal.style.display = 'block';
+        // Add modal to page body (not inside container)
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        console.log('Modal HTML inserted into DOM body');
         
-        console.log('Modal displayed successfully with data');
+        // Get the modal and ensure it's visible
+        const modal = document.getElementById('cleaningModal');
+        if (modal) {
+            console.log('Modal found in DOM, forcing visibility...');
+            
+            // Force all visibility properties
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.style.setProperty('position', 'fixed', 'important');
+            modal.style.setProperty('top', '0', 'important');
+            modal.style.setProperty('left', '0', 'important');
+            modal.style.setProperty('width', '100vw', 'important');
+            modal.style.setProperty('height', '100vh', 'important');
+            modal.style.setProperty('z-index', '999999', 'important');
+            
+            console.log('Modal visibility enforced');
+            
+            // Debug modal position
+            const rect = modal.getBoundingClientRect();
+            console.log('Modal position:', rect);
+            console.log('Modal computed styles:', window.getComputedStyle(modal));
+            
+        } else {
+            console.error('Modal not found in DOM after insertion');
+        }
         
     } catch (error) {
         console.error('Error in displayCleaningRecommendationsModal:', error);
@@ -3224,4 +3312,50 @@ function formatNextSteps(nextSteps) {
     // Fallback
     return `<p>${String(nextSteps)}</p>`;
 }
+
+// Add this debug function to check modal visibility
+function debugModalVisibility() {
+    const modal = document.getElementById('cleaningModal');
+    if (!modal) {
+        console.error('Modal not found in DOM');
+        return;
+    }
+    
+    console.log('=== Modal Visibility Debug ===');
+    
+    // Check computed styles
+    const computedStyle = window.getComputedStyle(modal);
+    console.log('Computed display:', computedStyle.display);
+    console.log('Computed position:', computedStyle.position);
+    console.log('Computed z-index:', computedStyle.zIndex);
+    console.log('Computed top:', computedStyle.top);
+    console.log('Computed left:', computedStyle.left);
+    console.log('Computed width:', computedStyle.width);
+    console.log('Computed height:', computedStyle.height);
+    
+    // Check if modal is in viewport
+    const rect = modal.getBoundingClientRect();
+    console.log('Modal bounding rect:', rect);
+    console.log('Modal is visible:', rect.width > 0 && rect.height > 0);
+    
+    // Check parent containers
+    let parent = modal.parentElement;
+    let depth = 0;
+    while (parent && depth < 3) {
+        const parentStyle = window.getComputedStyle(parent);
+        console.log(`Parent ${depth + 1} (${parent.tagName}):`, {
+            display: parentStyle.display,
+            position: parentStyle.position,
+            overflow: parentStyle.overflow
+        });
+        parent = parent.parentElement;
+        depth++;
+    }
+    
+    console.log('=== End Debug ===');
+}
+
+// Call this after modal creation
+// Add this line after modal creation in displayCleaningRecommendationsModal
+debugModalVisibility();
 
