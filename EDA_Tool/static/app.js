@@ -3259,12 +3259,12 @@ function debugButtonState() {
 // Add this function to format next steps properly
 function formatNextSteps(nextSteps) {
     console.log('Formatting next steps:', nextSteps);
-    
+
     if (!nextSteps) {
         return '<p>No next steps specified.</p>';
     }
-    
-    // Handle array format
+
+    // If it's an array, treat as bullet points
     if (Array.isArray(nextSteps)) {
         return `
             <ol class="next-steps-list">
@@ -3277,29 +3277,38 @@ function formatNextSteps(nextSteps) {
             </ol>
         `;
     }
-    
-    // Handle string format
+
+    // If it's a string, split into intro and steps
     if (typeof nextSteps === 'string') {
-        // Split by common delimiters and format as list
-        const steps = nextSteps.split(/[.;\n]/).filter(step => step.trim().length > 0);
-        
-        if (steps.length > 1) {
+        // Try to split at the first numbered step (e.g., "1. " or "1)")
+        const stepRegex = /(\d+\.\s|\d+\)\s)/g;
+        const match = stepRegex.exec(nextSteps);
+
+        if (match) {
+            const intro = nextSteps.slice(0, match.index).trim();
+            const stepsText = nextSteps.slice(match.index).trim();
+
+            // Split steps by number (handles "1. ", "2. ", etc.)
+            const steps = stepsText.split(/\d+\.\s|\d+\)\s/).filter(s => s.trim().length > 0);
+
             return `
+                <p class="next-steps-intro">${intro.replace(/^[🚀\s]*/, '')}</p>
                 <ol class="next-steps-list">
                     ${steps.map((step, index) => `
                         <li class="next-step-item">
                             <span class="step-number">${index + 1}</span>
-                            <span class="step-text">${step.trim()}</span>
+                            <span class="step-text">${step.trim().replace(/^\*\*/, '').replace(/\*\*$/, '')}</span>
                         </li>
                     `).join('')}
                 </ol>
             `;
         } else {
+            // Fallback: just a paragraph
             return `<p>${nextSteps}</p>`;
         }
     }
-    
-    // Handle object format
+
+    // If it's an object, show as JSON
     if (typeof nextSteps === 'object') {
         try {
             const stepsText = JSON.stringify(nextSteps, null, 2);
@@ -3308,7 +3317,7 @@ function formatNextSteps(nextSteps) {
             return `<p>${String(nextSteps)}</p>`;
         }
     }
-    
+
     // Fallback
     return `<p>${String(nextSteps)}</p>`;
 }
