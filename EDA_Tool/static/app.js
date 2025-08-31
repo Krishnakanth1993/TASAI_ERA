@@ -8,6 +8,11 @@ let addedCharts = []; // Store charts added to report
 // Global variables for cleaning recommendations
 let cleaningRecommendations = null;
 
+// Also declare it on window for global access
+if (typeof window !== 'undefined') {
+    window.cleaningRecommendations = null;
+}
+
 // Debug function to log data
 function debugLog(message, data) {
     console.log(`[EDA Debug] ${message}:`, data);
@@ -595,7 +600,7 @@ async function startAnalysis() {
     try {
         console.log('Starting analysis...');
     
-    // Show loading state
+        // Show loading state
         document.getElementById('analysisContent').innerHTML = `
             <div class="loading">
                 <div class="spinner"></div>
@@ -604,8 +609,8 @@ async function startAnalysis() {
         `;
         
         const response = await fetch('/analyze', {
-        method: 'POST',
-        headers: {
+            method: 'POST',
+            headers: {
                 'Content-Type': 'application/json'
             }
         });
@@ -615,11 +620,8 @@ async function startAnalysis() {
         if (response.ok) {
             console.log('Analysis completed successfully');
 
-// Display analysis results
+            // Display analysis results
             displayAnalysisResults(data);
-            
-            // Show the cleaning recommendations button AFTER analysis is complete
-            document.getElementById('cleaningRecommendationsBtn').style.display = 'inline-block';
             
             // Show success message
             showNotification('Analysis completed successfully!', 'success');
@@ -636,9 +638,6 @@ async function startAnalysis() {
                 Analysis failed: ${error.message}
             </div>
         `;
-        
-        // Hide the button if analysis fails
-        document.getElementById('cleaningRecommendationsBtn').style.display = 'none';
     }
 }
 
@@ -948,6 +947,8 @@ function displayAnalysisResults(data) {
     
     analysisContent.innerHTML = html;
     
+    console.log('HTML set successfully');
+    
     // Show the cleaning recommendations button after analysis is complete
     showCleaningRecommendationsButton();
 }
@@ -1161,8 +1162,6 @@ function downloadReport() {
 // Initialize the application
 function initApp() {
     debugLog('Initializing EDA Tool');
-    
-    // Remove drag and drop functionality - just keep basic file input
     
     // Show/hide cleaning columns based on action
     const cleaningAction = document.getElementById('cleaningAction');
@@ -2046,26 +2045,24 @@ function showNotification(message, type = 'info') {
 }
 
 // Function to get cleaning recommendations - Add async keyword
+// Enhanced function to get cleaning recommendations with proper flow
 async function getCleaningRecommendations() {
     try {
         console.log('Getting cleaning recommendations...');
         
-        // Show modal
-        document.getElementById('cleaningModal').style.display = 'block';
+        // Step 1: Show "Generating..." notification and disable button
+        const button = event.target;
+        const originalText = button.innerHTML;
         
-        // Show loading state
-        document.getElementById('cleaningLoading').style.display = 'block';
-        document.getElementById('cleaningRecommendations').style.display = 'none';
+        button.innerHTML = `
+            <i class="fas fa-spinner fa-spin"></i> Generating Recommendations...
+        `;
+        button.disabled = true;
         
-        // Check if we already have recommendations
-        if (cleaningRecommendations) {
-            console.log('Using cached recommendations');
-            displayCleaningRecommendations(cleaningRecommendations);
-            return;
-        }
+        // Show notification
+        showNotification('🤖 AI is analyzing your data...', 'info');
         
-        // Make API call to get recommendations
-        console.log('Calling /get_cleaning_recommendations endpoint...');
+        // Step 2: Make API call to get recommendations
         const response = await fetch('/get_cleaning_recommendations', {
             method: 'POST',
             headers: {
@@ -2073,139 +2070,142 @@ async function getCleaningRecommendations() {
             }
         });
         
-        console.log('Response status:', response.status);
-        
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
-        console.log('Response data:', data);
+        const result = await response.json();
         
-        if (data.success) {
-            cleaningRecommendations = data.recommendations;
-            displayCleaningRecommendations(cleaningRecommendations);
-        } else {
-            throw new Error(data.error || 'Failed to get recommendations');
+        if (result.error) {
+            throw new Error(result.error);
         }
+        
+        // Step 3: Store recommendations in both local and global variables
+        cleaningRecommendations = result;
+        window.cleaningRecommendations = result;
+        localStorage.setItem('cleaningRecommendations', JSON.stringify(result));
+        
+        // Step 4: Success notification
+        showNotification('✅ AI recommendations generated successfully!', 'success');
+        
+        // Step 5: Change button to "View AI Recommendations" and PROPERLY update onclick
+        button.innerHTML = `
+            <i class="fas fa-eye"></i> View AI Recommendations
+        `;
+        
+        // CRITICAL: Remove old onclick and add new one that ONLY opens modal
+        button.removeAttribute('onclick');
+        button.removeEventListener('click', getCleaningRecommendations);
+        button.addEventListener('click', viewCleaningRecommendations);
+        button.disabled = false;
+        
+        console.log('Recommendations generated and stored successfully');
+        console.log('Button onclick updated to viewCleaningRecommendations (modal only)');
         
     } catch (error) {
         console.error('Error getting cleaning recommendations:', error);
         
-        // Hide loading and show error
-        const loadingElement = document.getElementById('cleaningLoading');
-        if (loadingElement) {
-            loadingElement.style.display = 'none';
-        }
+        // Reset button to original state
+        button.innerHTML = originalText;
+        button.disabled = false;
         
-        const contentElement = document.getElementById('cleaningContent');
-        if (contentElement) {
-            contentElement.innerHTML = `
-                <div class="alert alert-error">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Failed to get cleaning recommendations: ${error.message}
-                    <br><br>
-                    <small>Make sure you have run the analysis first and have a valid Gemini API key configured.</small>
-                </div>
-            `;
-        }
+        // Ensure button still calls getCleaningRecommendations on error
+        button.removeEventListener('click', viewCleaningRecommendations);
+        button.addEventListener('click', getCleaningRecommendations);
+        
+        showNotification('❌ Failed to generate recommendations: ' + error.message, 'error');
     }
 }
 
-// Function to display cleaning recommendations
-function displayCleaningRecommendations(recommendations) {
-    const content = document.getElementById('cleaningRecommendations');
+// Update viewCleaningRecommendations to ONLY display modal (no API calls)
+function viewCleaningRecommendations() {
+    console.log('=== viewCleaningRecommendations called (MODAL ONLY) ===');
     
-    // Hide loading
-    document.getElementById('cleaningLoading').style.display = 'none';
-    content.style.display = 'block';
+    // First check local variable
+    let recommendations = cleaningRecommendations;
     
-    // Show export button
-    document.getElementById('exportBtn').style.display = 'inline-block';
+    // If not in local variable, check global
+    if (!recommendations) {
+        recommendations = window.cleaningRecommendations;
+    }
     
-    let html = '';
+    // If not in global, check localStorage
+    if (!recommendations) {
+        const stored = localStorage.getItem('cleaningRecommendations');
+        if (stored) {
+            try {
+                recommendations = JSON.parse(stored);
+                cleaningRecommendations = recommendations;
+                window.cleaningRecommendations = recommendations;
+                console.log('Retrieved recommendations from localStorage');
+            } catch (error) {
+                console.error('Error parsing stored recommendations:', error);
+            }
+        }
+    }
     
-    // Summary section
-    html += `
-        <div class="recommendation-section">
-            <h4><i class="fas fa-info-circle"></i> Summary</h4>
-            <p>${recommendations.summary}</p>
+    if (recommendations) {
+        console.log('Displaying recommendations from:', recommendations);
+        // ONLY call the modal display function - NO API calls
+        displayCleaningRecommendationsModal(recommendations);
+    } else {
+        console.log('No recommendations available to display');
+        showNotification('No AI recommendations available. Please run analysis first.', 'info');
+    }
+}
+
+// Enhanced notification function with better styling
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <div class="notification-message">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     `;
     
-    // Data quality score
-    html += `
-        <div class="data-quality-score">
-            <div class="score-label">Data Quality Score</div>
-            <div class="score-value">${recommendations.data_quality_score}</div>
-        </div>
-    `;
+    // Add to page
+    document.body.appendChild(notification);
     
-    // Critical issues
-    if (recommendations.critical_issues && recommendations.critical_issues.length > 0) {
-        html += `
-            <div class="recommendation-section">
-                <h4><i class="fas fa-exclamation-triangle"></i> Critical Issues</h4>
-        `;
-        
-        recommendations.critical_issues.forEach(issue => {
-            html += `
-                <div class="critical-issue ${issue.severity}">
-                    <div class="issue-header">
-                        <strong>${issue.issue}</strong>
-                        <span class="severity-badge ${issue.severity}">${issue.severity.toUpperCase()}</span>
-                    </div>
-                    <p><strong>Impact:</strong> ${issue.impact}</p>
-                    <p><strong>Recommendation:</strong> ${issue.recommendation}</p>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-    }
-    
-    // Cleaning steps
-    if (recommendations.cleaning_steps && recommendations.cleaning_steps.length > 0) {
-        html += `
-            <div class="recommendation-section">
-                <h4><i class="fas fa-tools"></i> Recommended Cleaning Steps</h4>
-                <div class="cleaning-steps-list">
-                    ${recommendations.cleaning_steps.map((step, index) => `
-                        <div class="cleaning-step">
-                            <div class="step-header">
-                                <h5 class="step-action">${step.step || (index + 1)}. ${step.action || 'No action specified'}</h5>
-                                <span class="priority-badge ${step.priority || 'medium'}">${(step.priority || 'medium').toUpperCase()}</span>
-                            </div>
-                            <div class="step-content">
-                                ${step.description ? `<p><strong>Description:</strong> ${step.description}</p>` : ''}
-                                ${step.columns && step.columns.length > 0 ? 
-                                    `<p><strong>Columns:</strong> ${step.columns.join(', ')}</p>` : ''}
-                                ${step.method ? `<p><strong>Method:</strong> ${step.method}</p>` : ''}
-                                ${step.expected_outcome ? `<p><strong>Expected Outcome:</strong> ${step.expected_outcome}</p>` : ''}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-    
-    // Next steps
-    if (recommendations.next_steps) {
-        html += `
-            <div class="recommendation-section">
-                <h4><i class="fas fa-arrow-right"></i> Next Steps</h4>
-                <p>${recommendations.next_steps}</p>
-            </div>
-        `;
-    }
-    
-    content.innerHTML = html;
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 // Function to close cleaning modal
 function closeCleaningModal() {
-    document.getElementById('cleaningModal').style.display = 'none';
+    console.log('=== closeCleaningModal called ===');
+    
+    const modal = document.getElementById('cleaningModal');
+    if (modal) {
+        // Hide the modal
+        modal.style.display = 'none';
+        console.log('Modal hidden');
+        
+        // Reset loading and content states
+        const loading = document.getElementById('cleaningLoading');
+        const content = document.getElementById('cleaningRecommendations');
+        
+        if (loading) {
+            loading.style.display = 'block';
+            console.log('Loading state reset');
+        }
+        if (content) {
+            content.style.display = 'none';
+            console.log('Content hidden');
+        }
+    } else {
+        console.log('Modal not found for closing');
+    }
 }
 
 // Function to export recommendations
@@ -2249,9 +2249,6 @@ async function startAnalysis() {
             // Display analysis results
             displayAnalysisResults(data);
             
-            // Show the cleaning recommendations button AFTER analysis is complete
-            document.getElementById('cleaningRecommendationsBtn').style.display = 'inline-block';
-            
             // Show success message
             showNotification('Analysis completed successfully!', 'success');
             
@@ -2267,9 +2264,6 @@ async function startAnalysis() {
                 Analysis failed: ${error.message}
             </div>
         `;
-        
-        // Hide the button if analysis fails
-        document.getElementById('cleaningRecommendationsBtn').style.display = 'none';
     }
 }
 
@@ -2579,6 +2573,8 @@ function displayAnalysisResults(data) {
     
     analysisContent.innerHTML = html;
     
+    console.log('HTML set successfully');
+    
     // Show the cleaning recommendations button after analysis is complete
     showCleaningRecommendationsButton();
 }
@@ -2592,15 +2588,51 @@ window.onclick = function(event) {
 }
 
 // Add this function to show the cleaning recommendations button
+// Update the showCleaningRecommendationsButton function to NOT auto-execute
 function showCleaningRecommendationsButton() {
+    console.log('=== showCleaningRecommendationsButton called ===');
+    
     const buttonContainer = document.getElementById('cleaningRecommendationsContainer');
+    console.log('Button container found:', buttonContainer);
+    
     if (buttonContainer) {
+        console.log('Updating button container...');
         buttonContainer.style.display = 'block';
-        buttonContainer.innerHTML = `
-            <button class="btn btn-primary" onclick="getCleaningRecommendations()">
-                <i class="fas fa-robot"></i> Get AI Data Cleaning Recommendations
-            </button>
-        `;
+        
+        // Check if we already have recommendations
+        if (cleaningRecommendations || window.cleaningRecommendations) {
+            // Show "View AI Recommendations" button (MODAL ONLY)
+            buttonContainer.innerHTML = `
+                <button class="btn btn-primary btn-ai" id="cleaningRecommendationsBtn">
+                    <i class="fas fa-eye"></i> View AI Recommendations
+                </button>
+            `;
+            
+            const button = buttonContainer.querySelector('#cleaningRecommendationsBtn');
+            if (button) {
+                // CRITICAL: This button should ONLY open modal, not call API
+                button.addEventListener('click', viewCleaningRecommendations);
+                console.log('View button event listener added (MODAL ONLY)');
+            }
+        } else {
+            // Show "Get AI Data Cleaning Recommendations" button (API CALL)
+            buttonContainer.innerHTML = `
+                <button class="btn btn-primary btn-ai" id="cleaningRecommendationsBtn">
+                    <i class="fas fa-robot"></i> Get AI Data Cleaning Recommendations
+                </button>
+            `;
+            
+            const button = buttonContainer.querySelector('#cleaningRecommendationsBtn');
+            if (button) {
+                // This button should call the API
+                button.addEventListener('click', getCleaningRecommendations);
+                console.log('Get button event listener added (API CALL)');
+            }
+        }
+        
+        console.log('Button container updated');
+    } else {
+        console.error('Button container not found!');
     }
 }
 
@@ -2713,8 +2745,7 @@ function displayGeminiRecommendations(recommendations) {
     
     // Cleaning Steps Section
     if (recommendations.cleaning_steps && recommendations.cleaning_steps.length > 0) {
-        html += `
-            <div class="recommendation-section">
+        html += `            <div class="recommendation-section">
                 <h3 class="section-title">
                     <i class="fas fa-tools"></i>
                     Recommended Cleaning Steps
@@ -2905,3 +2936,292 @@ function restoreCleaningModal() {
         console.log('Modal restored');
     }
 }
+
+// Update the displayCleaningRecommendationsModal function to work with existing HTML modal
+function displayCleaningRecommendationsModal(data) {
+    try {
+        console.log('=== displayCleaningRecommendationsModal called ===');
+        console.log('Data received:', data);
+        
+        // Get the existing modal elements
+        const modal = document.getElementById('cleaningModal');
+        const content = document.getElementById('cleaningRecommendations');
+        const loading = document.getElementById('cleaningLoading');
+        
+        if (!modal || !content) {
+            console.error('Modal elements not found');
+            return;
+        }
+        
+        // Populate the content with recommendations data
+        content.innerHTML = generateModalContentDirectly(data);
+        
+        // Hide loading, show content
+        if (loading) loading.style.display = 'none';
+        content.style.display = 'block';
+        
+        // Show the modal
+        modal.style.display = 'block';
+        
+        console.log('Modal displayed successfully with data');
+        
+    } catch (error) {
+        console.error('Error in displayCleaningRecommendationsModal:', error);
+        throw error;
+    }
+}
+
+// Add this function to generate modal content directly
+function generateModalContentDirectly(data) {
+    console.log('=== generateModalContentDirectly called ===');
+    console.log('Full data received:', data);
+    console.log('Data type:', typeof data);
+    console.log('Data keys:', Object.keys(data));
+    
+    if (data.recommendations) {
+        console.log('Recommendations object:', data.recommendations);
+        console.log('Recommendations keys:', Object.keys(data.recommendations));
+    }
+    
+    let html = '';
+    
+    // Summary Section
+    if (data.recommendations.summary) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-info-circle"></i> Summary</h4>
+                <p>${data.recommendations.summary}</p>
+            </div>
+        `;
+    }
+    
+    // Data Quality Score
+    if (data.recommendations.data_quality_score) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-star"></i> Data Quality Score</h4>
+                <div class="quality-score-display">
+                    <span class="score-value">${data.recommendations.data_quality_score}</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Critical Issues
+    if (data.recommendations.critical_issues && data.recommendations.critical_issues.length > 0) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-exclamation-triangle"></i> Critical Issues</h4>
+                <div class="critical-issues-list">
+                    ${data.recommendations.critical_issues.map((issue, index) => `
+                        <div class="critical-issue">
+                            <div class="issue-header">
+                                <span class="issue-number">${index + 1}</span>
+                                <span class="issue-severity ${issue.severity || 'medium'}">${(issue.severity || 'medium').toUpperCase()}</span>
+                            </div>
+                            <div class="issue-content">
+                                <p><strong>Issue:</strong> ${issue.issue || 'No description'}</p>
+                                ${issue.impact ? `<p><strong>Impact:</strong> ${issue.impact}</p>` : ''}
+                                ${issue.recommendation ? `<p><strong>Recommendation:</strong> ${issue.recommendation}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Cleaning Steps
+    if (data.recommendations.cleaning_steps && data.recommendations.cleaning_steps.length > 0) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-tools"></i> Recommended Cleaning Steps</h4>
+                <div class="cleaning-steps-list">
+                    ${data.recommendations.cleaning_steps.map((step, index) => `
+                        <div class="cleaning-step">
+                            <div class="step-header">
+                                <h5 class="step-action">${step.step || (index + 1)}. ${step.action || 'No action specified'}</h5>
+                                <span class="priority-badge ${step.priority || 'medium'}">${(step.priority || 'medium').toUpperCase()}</span>
+                            </div>
+                            <div class="step-content">
+                                ${step.description ? `<p><strong>Description:</strong> ${step.description}</p>` : ''}
+                                ${step.columns && step.columns.length > 0 ? 
+                                    `<p><strong>Columns:</strong> ${step.columns.join(', ')}</p>` : ''}
+                                ${step.method ? `<p><strong>Method:</strong> ${step.method}</p>` : ''}
+                                ${step.expected_outcome ? `<p><strong>Expected Outcome:</strong> ${step.expected_outcome}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Next Steps
+    if (data.recommendations.next_steps) {
+        html += `
+            <div class="recommendation-section">
+                <h4><i class="fas fa-arrow-right"></i> Next Steps</h4>
+                <div class="next-steps-content">
+                    ${formatNextSteps(data.recommendations.next_steps)}
+                </div>
+            </div>
+        `;
+    }
+    
+    console.log('Generated content length:', html.length);
+    return html;
+}
+
+// Add this function after your displayCleaningRecommendationsModal function
+
+// Function to debug modal visibility issues
+function debugModalVisibility(modal) {
+    console.log('=== Modal Visibility Debug ===');
+    
+    if (!modal) {
+        console.error('Modal element is null');
+        return;
+    }
+    
+    // Check computed styles
+    const computedStyle = window.getComputedStyle(modal);
+    console.log('Computed display:', computedStyle.display);
+    console.log('Computed visibility:', computedStyle.visibility);
+    console.log('Computed opacity:', computedStyle.opacity);
+    console.log('Computed z-index:', computedStyle.zIndex);
+    console.log('Computed position:', computedStyle.position);
+    
+    // Check if modal is in viewport
+    const rect = modal.getBoundingClientRect();
+    console.log('Modal position:', {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height
+    });
+    
+    // Check parent containers
+    let parent = modal.parentElement;
+    let depth = 0;
+    while (parent && depth < 5) {
+        const parentStyle = window.getComputedStyle(parent);
+        console.log(`Parent ${depth + 1} (${parent.tagName}):`, {
+            display: parentStyle.display,
+            visibility: parentStyle.visibility,
+            overflow: parentStyle.overflow
+        });
+        parent = parent.parentElement;
+        depth++;
+    }
+    
+    // Check if modal is actually visible
+    const isVisible = modal.offsetParent !== null;
+    console.log('Modal is visible in DOM:', isVisible);
+    
+    console.log('=== End Debug ===');
+}
+
+// Add this function to clear stored recommendations when needed
+function clearStoredRecommendations() {
+    localStorage.removeItem('cleaningRecommendations');
+    cleaningRecommendations = null;
+    window.cleaningRecommendations = null;
+    console.log('Stored recommendations cleared');
+}
+
+// Add function to close modal when clicking outside
+function setupModalClickOutside() {
+    const modal = document.getElementById('cleaningModal');
+    if (modal) {
+        modal.addEventListener('click', function(event) {
+            // Close modal if clicking on the background (not on modal content)
+            if (event.target === modal) {
+                closeCleaningModal();
+            }
+        });
+        console.log('Modal click outside listener added');
+    }
+}
+
+// Call this function when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupModalClickOutside();
+});
+
+// Add this function to debug button behavior
+function debugButtonState() {
+    const button = document.querySelector('#cleaningRecommendationsBtn');
+    if (button) {
+        console.log('=== Button Debug Info ===');
+        console.log('Button text:', button.innerHTML);
+        console.log('Button disabled:', button.disabled);
+        console.log('Button onclick attribute:', button.getAttribute('onclick'));
+        console.log('Button event listeners:', button.onclick);
+        console.log('Recommendations available:', !!cleaningRecommendations);
+        console.log('=== End Button Debug ===');
+    } else {
+        console.log('Button not found for debugging');
+    }
+}
+
+// Call this after button updates to verify state
+// Add this line after button updates in getCleaningRecommendations and showCleaningRecommendationsButton
+
+// Add this function to format next steps properly
+function formatNextSteps(nextSteps) {
+    console.log('Formatting next steps:', nextSteps);
+    
+    if (!nextSteps) {
+        return '<p>No next steps specified.</p>';
+    }
+    
+    // Handle array format
+    if (Array.isArray(nextSteps)) {
+        return `
+            <ol class="next-steps-list">
+                ${nextSteps.map((step, index) => `
+                    <li class="next-step-item">
+                        <span class="step-number">${index + 1}</span>
+                        <span class="step-text">${step}</span>
+                    </li>
+                `).join('')}
+            </ol>
+        `;
+    }
+    
+    // Handle string format
+    if (typeof nextSteps === 'string') {
+        // Split by common delimiters and format as list
+        const steps = nextSteps.split(/[.;\n]/).filter(step => step.trim().length > 0);
+        
+        if (steps.length > 1) {
+            return `
+                <ol class="next-steps-list">
+                    ${steps.map((step, index) => `
+                        <li class="next-step-item">
+                            <span class="step-number">${index + 1}</span>
+                            <span class="step-text">${step.trim()}</span>
+                        </li>
+                    `).join('')}
+                </ol>
+            `;
+        } else {
+            return `<p>${nextSteps}</p>`;
+        }
+    }
+    
+    // Handle object format
+    if (typeof nextSteps === 'object') {
+        try {
+            const stepsText = JSON.stringify(nextSteps, null, 2);
+            return `<pre class="next-steps-json">${stepsText}</pre>`;
+        } catch (error) {
+            return `<p>${String(nextSteps)}</p>`;
+        }
+    }
+    
+    // Fallback
+    return `<p>${String(nextSteps)}</p>`;
+}
+
