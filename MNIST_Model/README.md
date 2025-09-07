@@ -87,8 +87,8 @@ Adam adapts learning rates per parameter using moment estimates, making it signi
 
 | Parameter       | Value     |
 |-----------------|-----------|
-| Batch Size      | 64        |
-| Epochs          | 15–20     |
+| Batch Size      | 512        |
+| Epochs          | 20         |
 | Loss Function   | nn.NLLLoss() |
 | Activation      | ReLU      |
 | Final Activation| log_softmax |
@@ -104,22 +104,6 @@ pip install torch torchvision matplotlib
 
 ---
 
-## 🔍 Visualizing the Model
-
-To fully visualize the model including activations and pooling, export it to ONNX:
-
-```python
-torch.onnx.export(model, 
-                  torch.randn(1, 1, 28, 28), 
-                  "model.onnx", 
-                  input_names=['input'], 
-                  output_names=['output'], 
-                  dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}},
-                  opset_version=11)
-```
-Then view it in [https://netron.app](https://netron.app).
-
----
 
 ## 🎯 Future Work
 
@@ -134,6 +118,7 @@ Then view it in [https://netron.app](https://netron.app).
 
 ✅ Compact architecture with ~23K parameters  
 ✅ Achieves ~98% test accuracy on MNIST with Adam  
+![Test Results](images/Test_Results.png)
 ✅ Designed for learning, experimentation, and speed  
 
 ---
