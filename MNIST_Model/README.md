@@ -55,27 +55,8 @@ transforms.Compose([
 ## 🧠 4. CNN Architecture & Parameters
 
 ✅ **Layer-wise Summary**
-```python
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=3)      # 28x28 → 26x26
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=3)     # 26x26 → 24x24
-        self.conv3 = nn.Conv2d(32, 40, kernel_size=3)     # 12x12 → 10x10
-        self.conv4 = nn.Conv2d(40, 24, kernel_size=1)     # 5x5 → 5x5
-        self.fc1   = nn.Linear(24 * 5 * 5, 10)            # 600 → 10
+![CNN Architecture](images/cnn_architecture.svg)
 
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.max_pool2d(x, 2)
-        x = F.relu(self.conv3(x))
-        x = F.max_pool2d(x, 2)
-        x = F.relu(self.conv4(x))
-        x = x.view(-1, 24 * 5 * 5)
-        x = self.fc1(x)
-        return F.log_softmax(x, dim=1)
-```
 
 📊 **Parameter Breakdown**
 
