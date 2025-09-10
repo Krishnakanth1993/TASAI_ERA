@@ -179,5 +179,4 @@ MIT License
 ---
 
 ## ✍️ Author
-
-Your Name — [@Krishnakanth1993](https://github.com/Krishnakanth1993)
+[@Krishnakanth1993](https://github.com/Krishnakanth1993)
