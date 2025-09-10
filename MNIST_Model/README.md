@@ -163,16 +163,6 @@ pip install torch torchvision matplotlib
 
 ---
 
-
-## 🎯 Future Work
-
-- Add Dropout for regularization
-- Use BatchNorm to stabilize training
-- Explore deeper variants with similar param budgets
-- Test on Fashion-MNIST or CIFAR-10
-
----
-
 ## 📌 Final Notes
 
 ✅ Compact architecture with ~23K parameters  
