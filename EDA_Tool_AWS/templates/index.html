@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDA Tool - Exploratory Data Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> EDA Tool</h1>
+            <p>Comprehensive Exploratory Data Analysis for Data Science Teams</p>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('upload')">
+                    <i class="fas fa-upload"></i> Data Upload
+                </div>
+                <div class="tab" onclick="showTab('analysis')">
+                    <i class="fas fa-chart-bar"></i> Analysis
+                </div>
+                <div class="tab" onclick="showTab('visualization')">
+                    <i class="fas fa-chart-pie"></i> Visualization
+                </div>
+                <div class="tab" onclick="showTab('report')">
+                    <i class="fas fa-file-alt"></i> Report
+                </div>
+            </div>
+
+            <!-- Upload Tab -->
+            <div id="upload" class="tab-content active">
+                <div class="upload-section">
+                    <!-- Title and description are hidden by CSS -->
+                    <h2>Upload Your Dataset</h2>
+                    <p>Support for CSV, Excel (.xlsx, .xls) files up to 100MB</p>
+                    
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h3>Click to upload CSV/Excel file</h3>
+                        <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileUpload(event)">
+                    </div>
+
+                    <div id="uploadStatus"></div>
+                    
+                    <div id="dataPreview" class="data-preview" style="display: none;">
+                        <h3>Data Preview</h3>
+                        
+                        <!-- Data Info Section -->
+                        <div class="data-info-section">
+                            <h4>Dataset Information</h4>
+                            <div id="dataInfo"></div>
+                        </div>
+                        
+                        <!-- Data View Toggle Buttons -->
+                        <div class="data-view-toggle">
+                            <button class="btn active" onclick="showDataView('head')">
+                                <i class="fas fa-list"></i> HEAD 10
+                            </button>
+                            <button class="btn" onclick="showDataView('tail')">
+                                <i class="fas fa-list-ol"></i> TAIL 10
+                            </button>
+                        </div>
+                        
+                        <!-- Data Table Container -->
+                        <div id="dataTableContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Tab -->
+            <div id="analysis" class="tab-content">
+                <h2>Data Analysis</h2>
+                <p>Click the analyze button to get comprehensive statistics and insights about your dataset.</p>
+                
+                <div class="analysis-actions">
+                    <button class="btn" onclick="startAnalysis()">
+                        <i class="fas fa-play"></i> Run Analysis
+                    </button>
+                    <!-- Add this somewhere in your analysis tab, probably after the analysis content -->
+                    <span id="cleaningRecommendationsContainer" style="display: none;margin-left: 1em;">
+                        <!-- Button will be dynamically inserted here -->
+                    </span>
+                    <!-- Cleaning Recommendations Button - Hidden initially -->
+                    <!-- <button class="btn btn-ai" id="cleaningRecommendationsBtn" onclick="getCleaningRecommendations()" style="display: none;">
+                        <i class="fas fa-robot"></i> Get AI Cleaning Recommendations
+                    </button> -->
+
+                        
+                </div>
+
+                <div id="analysisContent">
+                    <!-- Analysis results will be displayed here -->
+                    <div class="analysis-placeholder">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>Click "Run Analysis" to analyze your dataset</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Tab -->
+            <div id="visualization" class="tab-content">
+                <div class="visualization-controls">
+                    <div class="form-group">
+                        <label for="chartType">Chart Type:</label>
+                        <select id="chartType" class="form-control" onchange="updateColumnSelection()">
+                            <option value="">Select chart type</option>
+                            <option value="histogram">Histogram (1 column)</option>
+                            <option value="boxplot">Boxplot (1 column)</option>
+                            <option value="scatter">Scatter Plot (2 columns)</option>
+                            <option value="correlation">Correlation Heatmap</option>
+                            <option value="bar">Bar Chart (1 column)</option>
+                        </select>
+                    </div>
+
+                    <div id="columnSelection" style="display: none;">
+                        <!-- Column selections will be populated here -->
+                    </div>
+
+                    <button class="btn" onclick="createVisualization()" id="createChartBtn" disabled>
+                        <i class="fas fa-chart-line"></i> Create Chart
+                    </button>
+                </div>
+
+                <!-- Chart Labeling Section -->
+                <div id="chartLabeling" class="chart-labeling" style="display: none;">
+                    <div class="form-group">
+                        <label for="chartTitle">Chart Title:</label>
+                        <input type="text" id="chartTitle" class="form-control" placeholder="Enter a descriptive title for this chart">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="chartDescription">Chart Description (Optional):</label>
+                        <textarea id="chartDescription" class="form-control" rows="2" placeholder="Add any notes or insights about this chart"></textarea>
+                    </div>
+                    
+                    <div class="chart-actions">
+                        <button class="btn btn-success" onclick="addChartToReport()">
+                            <i class="fas fa-plus"></i> Add to Report
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearChartLabeling()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div id="chartContainer" class="chart-container" style="display: none;"></div>
+                
+                <!-- Added Charts Summary -->
+                <div id="addedChartsSummary" class="added-charts-summary" style="display: none;">
+                    <h3><i class="fas fa-list"></i> Charts Added to Report</h3>
+                    <div id="addedChartsList"></div>
+                </div>
+            </div>
+
+            <!-- Report Tab - Enhanced -->
+            <div id="report" class="tab-content">
+                <h2>Generate EDA Report</h2>
+                <p>Create a comprehensive report with all your analysis results and visualizations.</p>
+                
+                <div class="report-controls">
+                    <div class="form-group">
+                        <label for="reportTitle">Report Title:</label>
+                        <input type="text" id="reportTitle" class="form-control" value="Exploratory Data Analysis Report" placeholder="Enter report title">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportDescription">Report Description:</label>
+                        <textarea id="reportDescription" class="form-control" rows="3" placeholder="Enter report description or notes"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportFormat">Report Format:</label>
+                        <select id="reportFormat" class="form-control">
+                            <option value="html">HTML Report</option>
+                            <option value="pdf">PDF Report</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Chart Selection Interface -->
+                <div id="chartSelectionInterface" class="chart-selection-interface" style="display: none;">
+                    <h3><i class="fas fa-chart-bar"></i> Select Charts for Report</h3>
+                    <p>Choose which charts to include in your report:</p>
+                    <div id="chartSelectionList"></div>
+                </div>
+                
+                <div class="report-actions">
+                    <button class="btn btn-primary" onclick="previewReport()">
+                        <i class="fas fa-eye"></i> Preview Report
+                    </button>
+                    
+                    <button class="btn btn-success" onclick="generateReport()">
+                        <i class="fas fa-file-alt"></i> Generate Report
+                    </button>
+                    
+                    <button class="btn btn-download" onclick="downloadReport()" id="downloadBtn" style="display: none;">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                </div>
+
+                <div id="reportLoading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Generating report...</p>
+                </div>
+
+                <div id="reportPreview" class="report-preview" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cleaning Recommendations Modal -->
+    <div id="cleaningModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-robot"></i> AI Data Cleaning Recommendations</h3>
+                <p>powered bu Gemini-2.5-flash</p>
+                <div class="modal-controls">
+                    <!-- <button class="modal-btn minimize-btn" onclick="minimizeCleaningModal()" title="Minimize">
+                        <i class="fas fa-minus"></i>
+                    </button> -->
+                    <span class="close" onclick="closeCleaningModal()" title="Close">&times;</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="cleaningContent">
+                    <!-- Loading state -->
+                    <div id="cleaningLoading" class="loading">
+                        <div class="spinner"></div>
+                        <p>Generating AI recommendations...</p>
+                    </div>
+                    
+                    <!-- Recommendations content will be populated here -->
+                    <div id="cleaningRecommendations" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCleaningModal()">Close</button>
+                <button class="btn btn-primary" onclick="exportRecommendations()" id="exportBtn" style="display: none;">
+                    <i class="fas fa-download"></i> Export Recommendations
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load external JavaScript file -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
