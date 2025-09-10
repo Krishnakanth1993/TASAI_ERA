@@ -152,7 +152,7 @@ Evaluates the model on the test dataset.
 ---
 
 ## 🚀 Training Process Flow Chart
-[TrainingFlowChart](images/mermaid-diagram.svg)
+![TrainingFlowChart](images/mermaid-diagram.svg)
 
 
 ## 🧾 Requirements
