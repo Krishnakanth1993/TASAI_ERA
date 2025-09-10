@@ -95,6 +95,65 @@ Adam adapts learning rates per parameter using moment estimates, making it signi
 | Optimizer       | Adam      |
 
 ---
+## 📌 Functions
+
+### `GetCorrectPredCount(pPrediction, pLabels)`
+
+**Purpose:**  
+Computes the number of correct predictions in a batch.
+
+**Parameters:**
+- `pPrediction`: Model output (logits), shape `[batch_size, num_classes]`
+- `pLabels`: Ground truth labels, shape `[batch_size]`
+
+**Returns:**  
+- Integer count of correct predictions.
+
+**Details:**
+- Applies `argmax(dim=1)` to logits to get predicted class indices.
+- Compares predicted labels with true labels using `.eq()` and sums correct matches.
+
+---
+
+### `train(model, device, train_loader, optimizer, criterion)`
+
+**Purpose:**  
+Trains the model for one epoch.
+
+**Parameters:**
+- `model`: Instance of `nn.Module`
+- `device`: Device to run the model on (`cuda` or `cpu`)
+- `train_loader`: `DataLoader` for training data
+- `optimizer`: Optimizer (e.g., `Adam`)
+- `criterion`: Loss function (e.g., `CrossEntropyLoss` with `reduction='none'`)
+
+**Details:**
+- Iterates over all batches in `train_loader`
+- Moves input and labels to the target `device`
+- Computes predictions, loss, gradients, and performs weight updates
+- Tracks and displays running loss and accuracy using `tqdm`
+
+---
+
+### `test(model, device, test_loader, criterion)`
+
+**Purpose:**  
+Evaluates the model on the test dataset.
+
+**Parameters:**
+- Same as `train()`, but uses `test_loader` instead.
+
+**Details:**
+- Switches to evaluation mode (`model.eval()`)
+- Disables gradient computation (`torch.no_grad()`)
+- Computes and averages loss and accuracy over the test set
+- Outputs results after processing all batches
+
+---
+
+## 🚀 Training Process Flow Chart
+[TrainingFlowChart](images/mermaid-diagram.svgmermaid-diagram.svg)
+
 
 ## 🧾 Requirements
 
